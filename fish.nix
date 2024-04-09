@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs,  ... }:
 {
   programs.fish = {
       enable = true;
@@ -29,7 +29,7 @@
         pst = "btm --expanded --default_widget_type=proc --tree";
         rm = "trash";
         vic = "vi /etc/nixos/configuration.nix";
-        vih = "vi ~/.config/home-manager/home.nix";
+        vih = "vi ~/.config/home-manager";
         vin = "vi ~/.config/nvim/init.lua";
         sys = "systemctl";
         syu = "systemctl --user";
