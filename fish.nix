@@ -33,6 +33,7 @@
         vin = "vi ~/.config/nvim/init.lua";
         sys = "systemctl";
         syu = "systemctl --user";
+        make = "make -j";
       };
     };
    }
