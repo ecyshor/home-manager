@@ -2,7 +2,7 @@
 {
   programs.fish = {
       shellAbbrs = {
-        cc = 
+        cc = "cd ~/workspace/canton-network-node/cluster/deployment/";
       };
     };
    }

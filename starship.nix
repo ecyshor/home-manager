@@ -6,6 +6,7 @@
       add_newline = true;
       format = lib.concatStrings [
         "$all"
+        "$line_break"
         "$directory"
         "$line_break"
         "$character"

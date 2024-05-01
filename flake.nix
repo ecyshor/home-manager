@@ -28,6 +28,7 @@
         # the path to your home.nix.
         modules = [ 
             ./home.nix 
+            ./hosts/xps/home.nix
             nixvim.homeManagerModules.nixvim
        ];
 
