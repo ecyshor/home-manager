@@ -1,7 +1,14 @@
+{ lib, ... }:
 {
   programs.starship = {
     enable = true;
     settings = {
+      format = lib.concatStrings [
+        "$all"
+        "$directory"
+        "$line_break"
+        "$character"
+      ];
       username = {
         style_user = "blue bold";
         style_root = "red bold";
