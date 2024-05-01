@@ -17,6 +17,13 @@
 
   imports = [
     ./git-sync.nix
+    ./fish.nix 
+    ./tmux.nix 
+    ./fzf.nix 
+    ./starship.nix 
+    ./direnv.nix 
+    ./nvim 
+
   ];
 
   # The home.packages option allows you to install Nix packages into your
