@@ -28,13 +28,6 @@
         # the path to your home.nix.
         modules = [ 
             ./home.nix 
-            ./fish.nix 
-            ./tmux.nix 
-            ./fzf.nix 
-            ./starship.nix 
-            ./direnv.nix 
-            ./nvim 
-
             nixvim.homeManagerModules.nixvim
        ];
 
@@ -48,12 +41,7 @@
       # the path to your home.nix.
       modules = [ 
           ./home.nix 
-          ./fish.nix 
-          ./tmux.nix 
-          ./fzf.nix 
-          ./starship.nix 
-          ./direnv.nix 
-          ./nvim 
+          ./hosts/work/home.nix
 
           nixvim.homeManagerModules.nixvim
      ];
