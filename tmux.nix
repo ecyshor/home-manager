@@ -71,7 +71,10 @@
     # Open tmux for current project.
     (pkgs.writeShellApplication {
       name = "pux";
-      runtimeInputs = [ pkgs.tmux ];
+      runtimeInputs = [ 
+        pkgs.tmux
+        pkgs.zoxide
+      ];
       text = ''
         PRJ="''$(zoxide query -i)"
         echo "Launching tmux for ''$PRJ"
