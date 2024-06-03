@@ -33,8 +33,7 @@
     # # overrides. You can do that directly here, just don't forget the
     # # parentheses. Maybe you want to install Nerd Fonts with a limited number of
     # # fonts?
-    # (pkgs.nerdfonts.override { fonts = [ "FantasqueSansMono" ]; })
-    pkgs.nerdfonts
+    (pkgs.nerdfonts.override { fonts = [ "FiraCode" ]; })
     pkgs.trash-cli
     pkgs.fd
     pkgs.ncdu
