@@ -62,6 +62,10 @@
       Host *
         IdentityAgent ~/.1password/agent.sock
     '';
+    # https://github.com/NixOS/nixpkgs/issues/121694#issuecomment-2159420924
+    "/etc/sysctl.d/60-apparmor-namespace.conf".text = ''
+      kernel.apparmor_restrict_unprivileged_userns=0
+    '';
 
     # # You can also set the file content immediately.
     # ".gradle/gradle.properties".text = ''
