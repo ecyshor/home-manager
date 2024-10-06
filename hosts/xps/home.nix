@@ -1,8 +1,8 @@
 { config, pkgs, ... }:
 {
-  services = {
-    mullvad-vpn.enable = true;
-    mullvad-vpn.package = pkgs.mullvad-vpn;
+  services.mullvad-vpn = {
+    enable = true;
+    package = pkgs.mullvad-vpn;
   };
   home.packages = [
     pkgs.ansible
