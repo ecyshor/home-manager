@@ -36,5 +36,12 @@
         syu = "systemctl --user";
         make = "make -j8";
       };
+      functions = {
+        # custom functions
+        mkcd = ''
+          mkdir -p $argv
+          and cd $argv
+        '';
+      };
     };
    }
