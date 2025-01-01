@@ -12,6 +12,7 @@
         }
       ];
       shellInit = "
+        fish_vi_key_bindings
         fish_add_path ~/.local/share/bin/
         fzf_configure_bindings --directory=\\cf
         fzf_configure_bindings --git_log=\\cg
@@ -33,7 +34,14 @@
         vin = "vi ~/.config/nvim/init.lua";
         sys = "systemctl";
         syu = "systemctl --user";
-        make = "make -j";
+        make = "make -j8";
       };
+      functions = {
+      # custom functions
+      mkcd = ''
+        mkdir -p $argv
+        and cd $argv
+      '';
+    };
     };
    }
