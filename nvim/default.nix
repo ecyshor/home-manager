@@ -39,7 +39,9 @@
       treesitter = {
         enable = true;
           settings = {
-            indent = true;
+            indent = {
+              enable = true;
+            };
             ensureInstalled = [
               "javascript"
               "nix"
