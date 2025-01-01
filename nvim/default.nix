@@ -78,7 +78,6 @@
           };
         };
         extensions = {
-          file_browser.enable = true;
         };
       };
 
