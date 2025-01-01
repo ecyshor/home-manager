@@ -6,7 +6,7 @@
     ./nvim-cmp.nix
   ];
   
-  programs.neovim = {
+  programs.nixvim = {
     enable = true;
     viAlias = true;
     vimAlias = true;
@@ -15,7 +15,7 @@
     colorschemes.tokyonight.enable = true;
 
     # Settings
-    options = {
+    opts = {
       expandtab = true;
       shiftwidth = 2;
       smartindent = true;
