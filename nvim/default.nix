@@ -42,6 +42,7 @@
             indent = {
               enable = true;
             };
+            auto_install = true;
             ensureInstalled = [
               "javascript"
               "nix"
