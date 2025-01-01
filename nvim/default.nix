@@ -6,7 +6,7 @@
     ./nvim-cmp.nix
   ];
   
-  programs.nixvim = {
+  programs.neovim = {
     enable = true;
     viAlias = true;
     vimAlias = true;
