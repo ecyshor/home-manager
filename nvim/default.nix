@@ -93,10 +93,13 @@
       lsp = {
         enable = true;
         servers = {
-          hls.enable = true;
+          hls = {
+            enable = true;
+            installGhc = true;
+          };
           marksman.enable = true;
           nil_ls.enable = true;
-          rust-analyzer = {
+          rust_analyzer = {
             enable = true;
             installCargo = false;
             installRustc = false;
