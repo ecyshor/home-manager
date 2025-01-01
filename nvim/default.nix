@@ -12,7 +12,7 @@
     vimAlias = true;
 
     # Theme
-    colorschemes.tokyonight.enable = true;
+    #colorschemes.tokyonight.enable = true;
 
     # Settings
     options = {
