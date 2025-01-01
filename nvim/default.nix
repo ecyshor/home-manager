@@ -37,15 +37,17 @@
       bufferline.enable = true;
       treesitter = {
         enable = true;
-        	indent = true;
-          ensureInstalled = [
-            "javascript"
-            "nix"
-            "tsx"
-            "typescript"
-            "vim"
-            "vimdoc"
-          ];
+          settings = {
+            indent = true;
+            ensureInstalled = [
+              "javascript"
+              "nix"
+              "tsx"
+              "typescript"
+              "vim"
+              "vimdoc"
+            ];
+          };
       };
       which-key = {
         enable = true;
