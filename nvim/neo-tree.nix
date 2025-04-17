@@ -15,6 +15,14 @@
         };
       }
       {
+        action = "<cmd>Neotree reveal<CR>";
+        key = "<leader>n.";
+        mode = "n";
+        options = {
+          desc = "Go to current file in neotree view.";
+        };
+      }
+      {
         action = "<C-w><Left>";
         key = "<C-h>";
         mode = "n";
