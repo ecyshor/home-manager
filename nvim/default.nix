@@ -132,7 +132,7 @@
                 "--glob=!**/yarn.lock"
                 "--glob=!**/package-lock.json"
               ];
-              addition_args = ["--hidden"];
+              #addition_args = ["--hidden"];
             };
           };
         };
