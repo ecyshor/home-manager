@@ -110,7 +110,7 @@
           live-grep-args = {
             enable = true;
             settings = {
-              vimgrep_arguments = ["--hidden"];
+              #vimgrep_arguments = ["--hidden"];
               addition_args = ["--hidden"];
             };
           };
