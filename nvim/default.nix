@@ -96,7 +96,7 @@
             options = {
               desc = "find via grep";
             };
-            action = "<cmd>lua require('telescope.builtin').live_grep({hidden = true})<CR>";
+            action = "live_grep({hidden = true})";
 
           };
           "<leader>fr" = {
