@@ -1,6 +1,6 @@
 {config, ...}: {
   services.git-sync = {
-    enable = true;
+    enable = false;
     repositories = {
       manager = {
         path = "${config.home.homeDirectory}/.config/home-manager";
