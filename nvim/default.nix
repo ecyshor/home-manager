@@ -96,7 +96,7 @@
           };
         };
         extensions = {
-          fzf_native.enable = true;
+          fzf-native.enable = true;
         };
       };
 
