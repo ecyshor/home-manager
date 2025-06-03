@@ -88,8 +88,15 @@
             };
             action = "live_grep";
           };
+          "<leader>fr" = {
+            options = {
+              desc = "resume last search";
+            };
+            action = "resume";
+          };
         };
         extensions = {
+          fzf_native.enable = true;
         };
       };
 
