@@ -116,7 +116,22 @@
           live-grep-args = {
             enable = true;
             settings = {
-              #vimgrep_arguments = ["--hidden"];
+              vimgrep_arguments = [
+                "rg"
+                "--follow"
+                "--hidden"
+                "--with-filename"
+                "--line-number"
+                "--smart-case"
+                # Exclude some patterns from search
+                "--glob=!**/.git/*"
+                "--glob=!**/.idea/*"
+                "--glob=!**/.vscode/*"
+                "--glob=!**/build/*"
+                "--glob=!**/dist/*"
+                "--glob=!**/yarn.lock"
+                "--glob=!**/package-lock.json"
+              ];
               addition_args = ["--hidden"];
             };
           };
@@ -162,9 +177,7 @@
           key = "<leader>fG";
           action.__raw = ''
             function()
-              require("telescope.builtin").live_grep {
-                additional_args = function(args) return vim.list_extend(args, { "--hidden", "--no-ignore" }) end,
-              }
+              vim.cmd('Telescope live_grep additional_args={"--hidden","--no-ignore"}')
             end
           '';
           options = {
