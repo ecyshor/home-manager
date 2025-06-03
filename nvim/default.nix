@@ -69,15 +69,15 @@
       };
       telescope = {
         enable = true;
-        defaults = {
-        file_ignore_patterns = [
-            "^.git/"
-            "^.mypy_cache/"
-            "^__pycache__/"
-            "^output/"
-            "^data/"
-            "%.ipynb"
-          ];
+        settings.defaults = {
+          file_ignore_patterns = [
+              "^.git/"
+              "^.mypy_cache/"
+              "^__pycache__/"
+              "^output/"
+              "^data/"
+              "%.ipynb"
+            ];
         };
         keymaps = {
           "<leader>b" = {
