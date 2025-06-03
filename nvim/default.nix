@@ -78,6 +78,7 @@
               "^data/"
               "%.ipynb"
             ];
+          vimgrep_arguments = [ "${pkgs.ripgrep}/bin/rg" "-L" "--color=never" "--no-heading" "--with-filename" "--line-number" "--column" "--smart-case" "--fixed-strings" "--hidden" ];
         };
         keymaps = {
           "<leader>b" = {
@@ -113,28 +114,6 @@
         };
         extensions = {
           fzf-native.enable = true;
-          live-grep-args = {
-            enable = true;
-            settings = {
-              vimgrep_arguments = [
-                "rg"
-                "--follow"
-                "--hidden"
-                "--with-filename"
-                "--line-number"
-                "--smart-case"
-                # Exclude some patterns from search
-                "--glob=!**/.git/*"
-                "--glob=!**/.idea/*"
-                "--glob=!**/.vscode/*"
-                "--glob=!**/build/*"
-                "--glob=!**/dist/*"
-                "--glob=!**/yarn.lock"
-                "--glob=!**/package-lock.json"
-              ];
-              #addition_args = ["--hidden"];
-            };
-          };
         };
       };
 
