@@ -162,7 +162,9 @@
           key = "<leader>fG";
           action.__raw = ''
             function()
-              vim.cmd('Telescope live_grep additional_args={"--hidden","--no-ignore"}')
+              require("telescope.builtin").live_grep {
+                additional_args = function(args) return vim.list_extend(args, { "--hidden", "--no-ignore" }) end,
+              }
             end
           '';
           options = {
