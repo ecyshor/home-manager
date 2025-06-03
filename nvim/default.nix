@@ -96,7 +96,7 @@
             options = {
               desc = "find via grep";
             };
-            action = "live_grep --hidden";
+            action = "live_grep";
           };
           "<leader>fr" = {
             options = {
