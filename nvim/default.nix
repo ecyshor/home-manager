@@ -97,6 +97,10 @@
         };
         extensions = {
           fzf-native.enable = true;
+          live-grep-args {
+            enable = true;
+            vimgrep_arguments = ["--hidden"];
+          };
         };
       };
 
