@@ -143,7 +143,7 @@
     };
 
     
-  keymaps = lib.mkIf config.plugins.telescope.enable (
+  keymaps = lib.mkIf programs.nixvim.config.plugins.telescope.enable (
     # Fzf-lua missing keymaps
     lib.optionals
       (
