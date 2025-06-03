@@ -174,19 +174,6 @@
         }
         {
           mode = "n";
-          key = "<leader>fG";
-          action.__raw = ''
-            function()
-              vim.cmd('Telescope live_grep additional_args={"--hidden","--no-ignore"}')
-            end
-          '';
-          options = {
-            desc = "Find words in all files";
-            silent = true;
-          };
-        }
-        {
-          mode = "n";
           key = "<leader>f/";
           action.__raw = ''
             function()
