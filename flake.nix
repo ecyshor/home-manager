@@ -34,6 +34,12 @@
 
         # Optionally use extraSpecialArgs
         # to pass through arguments to home.nix
+        extraSpecialArgs = {
+          git = {
+            name = "Nicu Reut";
+            email = "contact@nicu.dev";
+          };
+        };
     };
     homeConfigurations."nicu@nicureut-da-latitude" = home-manager.lib.homeManagerConfiguration {
       inherit pkgs; 
@@ -49,6 +55,12 @@
 
       # Optionally use extraSpecialArgs
       # to pass through arguments to home.nix
+      extraSpecialArgs = {
+        git = {
+          name = "Nicu Reut";
+          email = "nicu.reut@digitalasset.com";
+        };
+      };
     };
   };
 }

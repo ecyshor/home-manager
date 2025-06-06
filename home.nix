@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, git, ... }:
 
 {
   # Home Manager needs a bit of information about you and the paths it should
@@ -92,5 +92,33 @@
   programs = { 
     home-manager.enable = true; 
     ripgrep.enable = true; 
+  };
+
+  # Add global git prepare-commit-msg hook for sign-off
+  programs.git = {
+    enable = true;
+    userName = git.name;
+    userEmail = git.email;
+    extraConfig = {
+      core.hooksPath = "${config.home.homeDirectory}/.config/git/hooks";
+    };
+  };
+
+  home.file.".config/git/hooks/prepare-commit-msg" = {
+    text = ''
+      #!/bin/sh
+      # Only add Signed-off-by if not already present and not a merge or squash
+      case "$2" in
+        merge|squash) exit 0 ;;
+      esac
+
+      SIGNOFF="Signed-off-by: ${git.name} <${git.email}>"
+
+      if ! grep -qi "^Signed-off-by: " "$1"; then
+        echo "" >> "$1"
+        echo "$SIGNOFF" >> "$1"
+      fi
+    '';
+    executable = true;
   };
 }
