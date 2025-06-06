@@ -100,7 +100,8 @@
     userName = git.name;
     userEmail = git.email;
     extraConfig = {
-      core.hooksPath = "${config.home.homeDirectory}/.config/git/hooks";
+      # Can't be enabled as pre-commit doesn't work with it
+      #core.hooksPath = "${config.home.homeDirectory}/.config/git/hooks";
     };
   };
 
