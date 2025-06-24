@@ -36,6 +36,7 @@
       lualine.enable = true;
       bufferline.enable = true;
       web-devicons.enable = true;
+
       treesitter = {
         enable = true;
           settings = {
@@ -53,6 +54,7 @@
             ];
           };
       };
+      hardtime.enable = true;
       which-key = {
         enable = true;
       };
