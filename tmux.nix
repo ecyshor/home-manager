@@ -58,11 +58,13 @@
       bind "|" split-window -h -c "#{pane_current_path}"
       bind - split-window -v -c "#{pane_current_path}"
       bind c new-window -c "#{pane_current_path}"
+      # Renumber windows so that indices are always a complete sequence
+      set-option -g renumber-windows on
     '';
   };
 
   programs.tmate = {
-    enable = true;
+    enable = false;
     # FIXME: This causes tmate to hang.
     # extraConfig = config.xdg.configFile."tmux/tmux.conf".text;
   };
