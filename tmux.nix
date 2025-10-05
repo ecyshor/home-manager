@@ -87,7 +87,8 @@ in
       {
         plugin = tmuxPlugins.continuum;
         extraConfig = ''
-          set -g @continuum-boot 'on'
+          # Disable startup on boot because tmux starts too early and lots of shit is broken (colors, copy, startin graphical apps)
+          # set -g @continuum-boot 'on'
           set -g @continuum-restore 'on'
           set -g @continuum-save-interval '60' # minutes
         '';
