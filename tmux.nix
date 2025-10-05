@@ -12,6 +12,7 @@
     # Force tmux to use /tmp for sockets (WSL2 compat)
     secureSocket = false;
     shell = "${pkgs.fish}/bin/fish";
+    terminal = "screen-256color";
 
     plugins = with pkgs; [
       tmuxPlugins.better-mouse-mode

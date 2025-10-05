@@ -29,7 +29,7 @@
         modules = [ 
             ./home.nix 
             ./hosts/xps/home.nix
-            nixvim.homeManagerModules.nixvim
+            nixvim.homeModules.nixvim
        ];
 
         # Optionally use extraSpecialArgs
@@ -50,7 +50,7 @@
           ./home.nix 
           ./hosts/work/home.nix
 
-          nixvim.homeManagerModules.nixvim
+          nixvim.homeModules.nixvim
      ];
 
       # Optionally use extraSpecialArgs
