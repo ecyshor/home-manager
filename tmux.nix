@@ -15,7 +15,7 @@
 
     plugins = with pkgs; [
       tmuxPlugins.better-mouse-mode
-      tmuxPlugins.auto-reload
+      tmuxPlugins.tmux-autoreload
       {
         plugin = tmuxPlugins.yank;
         extraConfig = ''
