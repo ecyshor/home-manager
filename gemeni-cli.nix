@@ -1,6 +1,6 @@
 
 {pkgs, ...}: {
-  programs.gemeni-cli = {
+  programs.gemini-cli = {
     enable = true;
     settings = {
       vimMode= true;
