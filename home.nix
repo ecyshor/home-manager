@@ -23,7 +23,7 @@
     ./starship.nix 
     ./direnv.nix 
     ./nvim 
-
+    ./gemeni-cli.nix
   ];
 
   # The home.packages option allows you to install Nix packages into your
