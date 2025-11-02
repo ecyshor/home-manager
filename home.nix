@@ -98,11 +98,9 @@
   # Add global git prepare-commit-msg hook for sign-off
   programs.git = {
     enable = true;
-    userName = git.name;
-    userEmail = git.email;
-    extraConfig = {
-      # Can't be enabled as pre-commit doesn't work with it
-      #core.hooksPath = "${config.home.homeDirectory}/.config/git/hooks";
+    settings = {
+      user.name = git.name;
+      user.email = git.email;
     };
   };
 
