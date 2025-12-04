@@ -20,7 +20,6 @@
         fzf_configure_bindings --history=\\cr
         fzf_configure_bindings --variables=\\cv
         fzf_configure_bindings --processes=\\cp
-        source ~/.nix-profile/etc/profile.d/nix.fish
         set fzf_fd_opts --hidden
       ";
       shellAbbrs = {

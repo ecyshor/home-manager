@@ -1,4 +1,4 @@
-{ config, pkgs, git, ... }:
+{ config, pkgs, git, lib, ... }:
 
 {
   # Home Manager needs a bit of information about you and the paths it should
@@ -42,6 +42,9 @@
     pkgs.jq
     pkgs.zoxide
     pkgs.go
+    pkgs._1password-cli
+    pkgs._1password-gui
+    pkgs.gnumake
 
     # # You can also create simple shell scripts directly inside your
     # # configuration. For example, this adds a command 'my-hello' to your
@@ -87,6 +90,16 @@
   #
   home.sessionVariables = {
     EDITOR = "vim";
+  };
+
+  nixpkgs.config = {
+    allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+      "1password"
+      "1password-cli"
+      "1password-gui"
+    ];
+    # Alternatively, you can allow all unfree packages with:
+    # allowUnfree = true;
   };
 
   # Let Home Manager install and manage itself.
