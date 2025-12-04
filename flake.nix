@@ -41,7 +41,7 @@
           };
         };
     };
-    homeConfigurations."nicu@nicureut-da-latitude" = home-manager.lib.homeManagerConfiguration {
+    homeConfigurations."nicu@nicureut-Precision-5690" = home-manager.lib.homeManagerConfiguration {
       inherit pkgs; 
 
       # Specify your home configuration modules here, for example,
