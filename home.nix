@@ -2,7 +2,6 @@
 
 {
   # Home Manager needs a bit of information about you and the paths it should
-  123123
   # manage.
   home.username = "nicu";
   home.homeDirectory = "/home/nicu";
