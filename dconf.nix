@@ -1,6 +1,6 @@
 { pkgs, ... }:
 {
-  home.packages = [
+  home.systemPackages = [
     pkgs.gnome-tweaks
     pkgs.gnomeExtensions.clipboard-indicator
     # vitals
