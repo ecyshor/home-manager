@@ -14,6 +14,14 @@
       shellInit = "
         fish_vi_key_bindings
         fish_add_path ~/.local/share/bin/
+        # legacy
+        if test -e ~/.nix-profile/etc/profile.d/nix.fish
+          source ~/.nix-profile/etc/profile.d/nix.fish
+        end
+        if test -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish
+          source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish
+          source /nix/var/nix/profiles/default/etc/profile.d/nix.fish
+        end
         fzf_configure_bindings --directory=\\cf
         fzf_configure_bindings --git_log=\\cg
         fzf_configure_bindings --git_status=\\cs
