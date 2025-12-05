@@ -1,6 +1,7 @@
 { pkgs, ... }:
 {
   home.packages = [
+    pkgs.gnome-shell-extensions
     pkgs.gnomeExtensions.clipboard-indicator
     # vitals
     pkgs.lm_sensors
@@ -15,6 +16,7 @@
     "org/gnome/shell" = {
       enabled-extensions = [
         "clipboard-indicator@tudmotu.com"
+        "Vitals@CoreCoding.com"
         ];
       };
     "org/gnome/desktop/interface".show-battery-percentage = true;
