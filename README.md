@@ -10,6 +10,8 @@ Change to the new shell `chsh`
 
 #### Manual configs
 
+Vitals require installing `apt install gir1.2-gtop-2.0`
+
 ##### Mullvadvpn
 
 ```
