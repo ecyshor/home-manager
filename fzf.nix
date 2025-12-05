@@ -1,6 +1,7 @@
 {pkgs, ...}: {
   programs.fzf = {
     enable = true;
+    enableFishIntegration = true;
 
     defaultCommand = "${pkgs.fd}/bin/fd --hidden --type f";
     fileWidgetCommand = "${pkgs.fd}/bin/fd --hidden --type f";
