@@ -1,11 +1,10 @@
 { pkgs, ... }:
 {
   home.packages = [
-    pkgs.gnome-tweaks
     pkgs.gnomeExtensions.clipboard-indicator
     # vitals
-    #pkgs.lm_sensors
-    #pkgs.gnomeExtensions.vitals
+    pkgs.lm_sensors
+    pkgs.gnomeExtensions.vitals
   ];
   dconf = {
    enable = true;
