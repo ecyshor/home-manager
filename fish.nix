@@ -37,7 +37,7 @@
         pst = "btm --expanded --default_widget_type=proc --tree";
         rm = "trash";
         vic = "vi /etc/nixos/configuration.nix";
-        vih = "vi ~/.config/home-manager";
+        vih = "cd .config/home-manager && vi .";
         vin = "vi ~/.config/nvim/init.lua";
         sys = "systemctl";
         syu = "systemctl --user";
