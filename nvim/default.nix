@@ -6,7 +6,7 @@
     ./nvim-cmp.nix
   ];
   
-  home.packages = [ zig ];
+  home.packages = [ pkgs.zig ];
 
   programs.nixvim = {
     enable = true;
