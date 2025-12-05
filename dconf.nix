@@ -1,7 +1,7 @@
 { pkgs, ... }:
 {
   home.packages = [
-    pkgs.gnome-extensions-manager
+    pkgs.gnome-extension-manager
     pkgs.gnomeExtensions.clipboard-indicator
     # vitals
     pkgs.lm_sensors
