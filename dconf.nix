@@ -3,6 +3,8 @@
   home.packages = [
     pkgs.gnome-extension-manager 
     pkgs.gnomeExtensions.clipboard-indicator
+    # vitals
+    pkgs.lm_sensors
     pkgs.gnomeExtensions.vitals
   ];
   dconf = {
