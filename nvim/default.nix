@@ -6,6 +6,8 @@
     ./nvim-cmp.nix
   ];
   
+  home.packages = [ zig ];
+
   programs.nixvim = {
     enable = true;
     viAlias = true;
