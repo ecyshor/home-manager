@@ -41,7 +41,6 @@
     pkgs.lnav
     pkgs.bottom
     pkgs.jq
-    pkgs.zoxide
     pkgs.go
     pkgs._1password-cli
     pkgs._1password-gui
@@ -108,6 +107,10 @@
   programs = { 
     home-manager.enable = true; 
     ripgrep.enable = true; 
+    zoxide = {
+      enable = true;
+      enableFishIntegration = true;
+    };
   };
 
   # Add global git prepare-commit-msg hook for sign-off
