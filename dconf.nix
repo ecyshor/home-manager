@@ -16,7 +16,7 @@
     "org/gnome/shell" = {
       enabled-extensions = [
         "clipboard-indicator@tudmotu.com"
-#        "Vitals@CoreCoding.com"
+        "Vitals@CoreCoding.com"
         ];
       };
     "org/gnome/desktop/interface".show-battery-percentage = true;
