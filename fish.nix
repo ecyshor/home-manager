@@ -43,6 +43,9 @@
         syu = "systemctl --user";
         make = "make -j8";
       };
+      shellAliases = {
+        lgs = "${pkgs.systemd}/bin/journalctl --user -o json -f -u git-pull-home-manager.service | ${pkgs.lnav}/bin/lnav";
+      };
       functions = {
         # custom functions
         mkcd = ''
