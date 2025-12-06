@@ -18,6 +18,9 @@
         "clipboard-indicator@tudmotu.com"
         "Vitals@CoreCoding.com"
         ];
+      disabled-extensions = [
+        "ubuntu-dock@ubuntu.com"
+      ];
       };
     "org/gnome/desktop/interface".show-battery-percentage = true;
     };
