@@ -23,6 +23,10 @@
       ];
       };
     "org/gnome/desktop/interface".show-battery-percentage = true;
+    "org/gnome/shell/extensions/vitals" = {
+      hot-sensors = [ "_storage_free_" "_memory_usage_" "_system_load_1m_" "__network-rx_max__" ];
+      position-in-panel = 0;
+    };
     };
   };
 }
