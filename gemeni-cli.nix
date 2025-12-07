@@ -3,9 +3,12 @@
   programs.gemini-cli = {
     enable = true;
     settings = {
-      vimMode= true;
-      preferredEditor = "vim";
-      previewFeatures= true;
+      general = {
+        vimMode= true;
+        preferredEditor = "vim";
+        previewFeatures= true;
+      };
+      security.auth.selectedType = "oauth-personal";
     };
   };
 }
