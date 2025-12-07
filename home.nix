@@ -47,6 +47,7 @@
     pkgs._1password-gui
     pkgs.gnumake
     pkgs.xclip
+    pkgs.pmutils
 
     # # You can also create simple shell scripts directly inside your
     # # configuration. For example, this adds a command 'my-hello' to your
