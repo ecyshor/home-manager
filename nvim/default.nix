@@ -39,6 +39,8 @@
       bufferline.enable = true;
       web-devicons.enable = true;
 
+      vim-suda.enable = true;
+
       treesitter = {
         enable = true;
           settings = {
