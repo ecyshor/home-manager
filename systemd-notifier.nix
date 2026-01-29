@@ -32,7 +32,7 @@
     Timer = {
       # Run 5 minutes after boot, and then every 15 minutes
       OnBootSec = "5m";
-      OnUnitActiveSec = "15m";
+      OnUnitActiveSec = "2h";
     };
     Install = {
       WantedBy = [ "timers.target" ];
