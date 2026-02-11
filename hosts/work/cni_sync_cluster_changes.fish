@@ -49,8 +49,13 @@ if not test -f config.yaml; or not test -f .envrc.vars
 end
 
 # Verify clean state
-if test -n "(git status --porcelain)"
-    echo "Error: Working directory is not clean. Please commit/stash changes."
+
+# Check if repo is clean
+set git_status_output (git status --porcelain)
+if test -n "$git_status_output"
+    echo "Error: Working directory is not clean. Please commit or stash changes."
+    echo "Untracked/Modified files:"
+    echo $git_status_output
     exit 1
 end
 
@@ -115,7 +120,7 @@ for target in $user_targets
         if test -n "(git status --porcelain)"
             echo " > Changes detected (including update-expected). Committing..."
             git add .
-            git commit -m "sync cluster config for $hint from $source_branch" --quiet
+            git commit -m "sync cluster config for $hint from $source_branch" --quiet --no-verify
             set -a branches_created $new_branch_name
         else
             echo " > No changes detected. Skipping commit."
@@ -161,3 +166,4 @@ end
 git checkout $source_branch --quiet
 cd $start_dir
 echo "Returned to $source_branch in $relative_prefix"
+
