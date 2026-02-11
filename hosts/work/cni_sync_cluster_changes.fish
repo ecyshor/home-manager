@@ -2,34 +2,53 @@
 
 # 1. Validation: Check arguments
 if test (count $argv) -lt 2
-    echo "Usage: ./sync_cluster.fish <hint> <target_branch_1> [target_branch_2] ..."
-    echo "Example: ./sync_cluster.fish myupdate 0.4.8 0.4.9 main"
+    echo "Usage: sync-cluster <hint> <target_branch_1> [target_branch_2] ..."
+    echo "Example: sync-cluster mainnet 0.4.8 0.4.9 main"
     exit 1
 end
 
-# 2. Setup Variables
+# 2. Setup Variables & Location Awareness
 set hint $argv[1]
 set user_targets $argv[2..-1]
-set source_branch (git branch --show-current)
+
+# Capture where we are relative to the git root (e.g., "cluster/deployment/mainnet/")
+set relative_prefix (git rev-parse --show-prefix)
 set repo_root (git rev-parse --show-toplevel)
-set files_to_sync "config.yaml" ".envrc.vars"
+
+# Define the files WITH their relative path
+set files_to_sync "$relative_prefix"config.yaml "$relative_prefix".envrc.vars
 set branches_created
 
-# Check if we are in a clean state before starting
-if test -n "(git status --porcelain)"
-    echo "Error: Working directory is not clean. Please commit or stash changes before running."
+# Verify files exist in the current directory before starting
+if not test -f config.yaml; or not test -f .envrc.vars
+    echo "Error: config.yaml or .envrc.vars not found in current directory."
+    echo "You must run this script from the directory containing these files."
+    exit 1
+end
+
+# Check if repo is clean
+set git_status_output (git status --porcelain)
+if test -n "$git_status_output"
+    echo "Error: Working directory is not clean. Please commit or stash changes."
+    echo "Untracked/Modified files:"
+    echo $git_status_output
     exit 1
 end
 
 echo "--- Starting Sync ---"
-echo "Source: $source_branch"
-echo "Hint:   $hint"
-echo "Targets: $user_targets"
+set source_branch (git branch --show-current)
+echo "Source Branch: $source_branch"
+echo "Working Dir:   $relative_prefix"
+echo "Syncing Files: $files_to_sync"
+echo "Targets:       $user_targets"
 echo "---------------------"
+
+# Move to root so Make commands work consistently
+cd $repo_root
 
 # 3. Main Loop
 for target in $user_targets
-    # logic: if input is just numbers (0.4.8), prepend release-line-. Else use as is (main).
+    # Format target branch name
     if string match -r '^[0-9]+\.[0-9]+\.[0-9]+$' -- $target
         set base_target "release-line-$target"
     else
@@ -40,7 +59,7 @@ for target in $user_targets
 
     echo "Processing target: $base_target"
     
-    # Switch to base target and pull latest
+    # Switch to base target
     echo " > Checking out $base_target..."
     git checkout $base_target --quiet
     or begin; echo "Failed to checkout $base_target"; exit 1; end
@@ -49,20 +68,18 @@ for target in $user_targets
     
     # Create the sync branch
     echo " > Creating branch $new_branch_name..."
-    # If branch exists, delete it first to ensure clean state
     if git show-ref --verify --quiet refs/heads/$new_branch_name
         git branch -D $new_branch_name --quiet
     end
     git checkout -b $new_branch_name --quiet
 
-    # Sync the specific files from the source branch
-    echo " > Syncing files from $source_branch..."
+    # Sync the files to their original location (relative_prefix)
+    echo " > Syncing files from $source_branch into $relative_prefix..."
     git checkout $source_branch -- $files_to_sync 2>/dev/null
     
-    # Run the Build/Update Sequence
-    echo " > Running build sequence (this may take a moment)..."
+    # Run Build Sequence
+    echo " > Running build sequence..."
     
-    # We combine commands. If one fails, the block fails.
     if git submodule update --init --recursive
         and make -j8 -C splice cluster/clean
         and make -j8 -C splice cluster/build
@@ -79,7 +96,6 @@ for target in $user_targets
         end
     else
         echo "Error: Build sequence failed on branch $new_branch_name"
-        echo "Stopping execution to allow debugging."
         exit 1
     end
 end
@@ -91,12 +107,13 @@ echo "--- Preview of Changes ---"
 if test (count $branches_created) -eq 0
     echo "No branches were created or modified."
     git checkout $source_branch --quiet
+    # Return to the directory where user started
+    cd $repo_root/$relative_prefix
     exit 0
 end
 
 for branch in $branches_created
     echo "Branch: $branch"
-    # Show stats of the commit
     git show --stat --oneline HEAD
     echo "--------------------------"
 end
@@ -111,10 +128,10 @@ if string match -r -i "^y(es)?\$" -- $confirm
     end
     echo "Done."
 else
-    echo "Push cancelled."
-    echo "Branches have been created locally."
+    echo "Push cancelled. Branches created locally."
 end
 
-# Return to original branch
+# Cleanup: Return to original branch and directory
 git checkout $source_branch --quiet
-echo "Returned to $source_branch."
+cd $repo_root/$relative_prefix
+echo "Returned to $source_branch in $relative_prefix"
