@@ -10,5 +10,5 @@
       [[ssh-keys]]
       vault = "Digital Asset"
     '';
-  }
+  };
 }
