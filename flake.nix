@@ -41,7 +41,7 @@
           };
         };
     };
-    homeConfigurations."nicu@nicureut-Precision-5690" = home-manager.lib.homeManagerConfiguration {
+    homeConfigurations."nicu@nicu-da-dell-pro-max" = home-manager.lib.homeManagerConfiguration {
       inherit pkgs; 
 
       # Specify your home configuration modules here, for example,
