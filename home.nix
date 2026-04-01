@@ -122,6 +122,7 @@
       user.name = git.name;
       user.email = git.email;
     };
+    signing.format = null;
   };
 
   home.file.".config/git/hooks/prepare-commit-msg" = {
