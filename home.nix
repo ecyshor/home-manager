@@ -48,6 +48,7 @@
     pkgs.gnumake
     pkgs.xclip
     pkgs.pmutils
+    pkgs.auto-cpufreq
 
     # # You can also create simple shell scripts directly inside your
     # # configuration. For example, this adds a command 'my-hello' to your
@@ -69,12 +70,25 @@
         IdentityAgent ~/.1password/agent.sock
     '';
 
+
     # # You can also set the file content immediately.
     # ".gradle/gradle.properties".text = ''
     #   org.gradle.console=verbose
     #   org.gradle.daemon.idletimeout=3600000
     # '';
   };
+
+  xdg.configFile."auto-cpufreq/auto-cpufreq.conf".text = ''
+     [charger]
+     governor = performance
+     energy_performance_preference = performance
+     turbo = always
+
+     [battery]
+     governor = powersave
+     energy_performance_preference = balance_power
+     turbo = auto
+  '';
 
   # Home Manager can also manage your environment variables through
   # 'home.sessionVariables'. If you don't want to manage your shell through Home
