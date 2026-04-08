@@ -104,7 +104,6 @@
               desc = "find via grep";
             };
             action = "live_grep";
-
           };
           "<leader>fr" = {
             options = {
@@ -167,6 +166,23 @@
           '';
           options = {
             desc = "Find words in all open buffers";
+            silent = true;
+          };
+        }
+        {
+          mode = "v";
+          key = "<leader>fg";
+          action.__raw = ''
+            function()
+              vim.cmd('noau normal! "vy')
+              local text = vim.fn.getreg("v")
+              text = vim.fn.escape(text, "/\\.*$^~[]")
+              text = text:gsub("^%s+", ""):gsub("%s+$", "")
+              require("telescope.builtin").grep_string({ search = text })
+            end
+          '';
+          options = {
+            desc = "Grep selected text";
             silent = true;
           };
         }
