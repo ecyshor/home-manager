@@ -82,11 +82,14 @@
      [charger]
      governor = performance
      energy_performance_preference = performance
+     # Force the Bias to performance to match the EPP
+     energy_perf_bias = performance
      turbo = always
 
      [battery]
      governor = powersave
      energy_performance_preference = balance_power
+     energy_perf_bias = power
      turbo = auto
   '';
 
