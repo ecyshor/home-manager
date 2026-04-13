@@ -178,7 +178,9 @@
               local text = vim.fn.getreg("v")
               text = vim.fn.escape(text, "/\\.*$^~[]")
               text = text:gsub("^%s+", ""):gsub("%s+$", "")
-              require("telescope.builtin").grep_string({ search = text })
+              require("telescope.builtin").live_grep({
+                default_text = text,
+              })
             end
           '';
           options = {
