@@ -128,6 +128,7 @@
   programs = { 
     home-manager.enable = true; 
     ripgrep.enable = true; 
+    gh.enable = true;
     zoxide = {
       enable = true;
       enableFishIntegration = true;
