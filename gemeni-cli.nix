@@ -1,6 +1,6 @@
 {pkgs, ...}: {
-  home.file.".gemini/settings.json".force = true;
-  programs.gemini-cli = {
+  home.file.".gemini/antigravity-cli/settings.json".force = true;
+  programs.antigravity-cli = {
     enable = true;
     settings = {
       general = {

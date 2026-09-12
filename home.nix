@@ -118,6 +118,7 @@
       "1password"
       "1password-cli"
       "1password-gui"
+      "antigravity-cli"
     ];
     # Alternatively, you can allow all unfree packages with:
     # allowUnfree = true;
