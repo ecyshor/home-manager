@@ -51,6 +51,13 @@
     pkgs.xclip
     pkgs.pmutils
     pkgs.auto-cpufreq
+    # Override proton-pass to disable Electron sandbox (chrome-sandbox setuid issue on non-NixOS)
+    (pkgs.proton-pass.overrideAttrs (old: {
+      preFixup = (old.preFixup or "") + ''
+        wrapProgram $out/bin/proton-pass --set ELECTRON_DISABLE_SANDBOX 1
+      '';
+    }))
+    pkgs.proton-pass-cli
 
     # # You can also create simple shell scripts directly inside your
     # # configuration. For example, this adds a command 'my-hello' to your
@@ -69,7 +76,7 @@
     # ".screenrc".source = dotfiles/screenrc;
     ".ssh/config".text = ''
       Host *
-        IdentityAgent ~/.1password/agent.sock
+        IdentityAgent ${config.home.homeDirectory}/.local/share/proton-pass/ssh-agent.sock
     '';
 
 
@@ -112,6 +119,30 @@
   #
   home.sessionVariables = {
     EDITOR = "vim";
+    SSH_AUTH_SOCK = "${config.home.homeDirectory}/.local/share/proton-pass/ssh-agent.sock";
+  };
+
+  # Register proton-pass as handler for protonpass:// URLs
+  # Needed because Snap Firefox can't see desktop entries in nix-profile
+  xdg.dataFile."applications/proton-pass.desktop".text = ''
+    [Desktop Entry]
+    Name=Proton Pass
+    Comment=Proton Pass desktop application
+    GenericName=Password Manager
+    Exec=${config.home.homeDirectory}/.nix-profile/bin/proton-pass %U
+    Icon=proton-pass
+    Type=Application
+    StartupNotify=true
+    Categories=Utility;
+    MimeType=x-scheme-handler/protonpass;
+  '';
+
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
+      "x-scheme-handler/protonpass" = "proton-pass.desktop";
+      "x-scheme-handler/antigravity" = "antigravity.desktop";
+    };
   };
 
   nixpkgs.config = {
@@ -122,6 +153,8 @@
       "antigravity-cli"
       "mistral-vibe"
       "textual-speedups" # Dependency of mistral-vibe; marked unfree in nixpkgs due to lack of upstream license
+      "proton-pass"
+      "proton-pass-cli"
     ];
     # Alternatively, you can allow all unfree packages with:
     # allowUnfree = true;
