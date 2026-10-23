@@ -24,6 +24,7 @@
     ./direnv.nix 
     ./nvim 
     ./gemeni-cli.nix
+    ./mistral-vibe.nix
     ./dconf.nix
     ./systemd-notifier.nix
     ./i3.nix
@@ -119,6 +120,8 @@
       "1password-cli"
       "1password-gui"
       "antigravity-cli"
+      "mistral-vibe"
+      "textual-speedups" # Dependency of mistral-vibe; marked unfree in nixpkgs due to lack of upstream license
     ];
     # Alternatively, you can allow all unfree packages with:
     # allowUnfree = true;
