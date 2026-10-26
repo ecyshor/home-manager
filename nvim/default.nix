@@ -1,10 +1,14 @@
-{ pkgs, ... }: {
+{ pkgs, lib, personalLaptop, ... }: {
 
   imports = [
-    ./avante.nix
     ./neo-tree.nix
     ./neogit.nix
     ./nvim-cmp.nix
+  ]
+  # AI integrations live only on the personal laptop (XPS)
+  ++ lib.optionals personalLaptop [
+    ./avante.nix
+    ./antigravity.nix
   ];
   
   home.packages = [ pkgs.zig ];

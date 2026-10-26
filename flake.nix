@@ -39,6 +39,8 @@
             name = "Nicu Reut";
             email = "contact@nicu.dev";
           };
+          # Personal laptop (XPS): mistral-vibe and the agy neovim integration
+          personalLaptop = true;
         };
     };
     homeConfigurations."nicu@nicu-da-dell-pro-max" = home-manager.lib.homeManagerConfiguration {
@@ -60,6 +62,7 @@
           name = "Nicu Reut";
           email = "nicu.reut@digitalasset.com";
         };
+        personalLaptop = false;
       };
     };
   };

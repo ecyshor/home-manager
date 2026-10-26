@@ -24,7 +24,6 @@
     ./direnv.nix 
     ./nvim 
     ./gemeni-cli.nix
-    ./mistral-vibe.nix
     ./dconf.nix
     ./systemd-notifier.nix
     ./i3.nix

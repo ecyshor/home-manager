@@ -1,5 +1,9 @@
 { config, pkgs, ... }:
 {
+  imports = [
+    ../../mistral-vibe.nix
+  ];
+
   home.packages = [
     pkgs.ansible
     pkgs.sshpass
