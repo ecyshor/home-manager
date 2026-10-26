@@ -16,6 +16,14 @@
   systemd.user.services.proton-pass-ssh-agent = {
     Unit = {
       Description = "Proton Pass SSH Agent (Digital Asset vault)";
+      After = [
+        "graphical-session.target"
+        "gnome-keyring-daemon.service"
+        "dbus.service"
+      ];
+      Wants = [ "gnome-keyring-daemon.service" ];
+      StartLimitIntervalSec = 60;
+      StartLimitBurst = 3;
     };
     Service = {
       Type = "simple";
@@ -24,7 +32,7 @@
       RestartSec = 5;
     };
     Install = {
-      WantedBy = [ "default.target" ];
+      WantedBy = [ "graphical-session.target" ];
     };
   };
 }

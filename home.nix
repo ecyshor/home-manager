@@ -26,6 +26,7 @@
     ./gemeni-cli.nix
     ./dconf.nix
     ./systemd-notifier.nix
+    ./syslog-limits.nix
     ./i3.nix
   ];
 
@@ -52,9 +53,12 @@
     pkgs.auto-cpufreq
     pkgs.desktop-file-utils
     # Override proton-pass to disable Electron sandbox (chrome-sandbox setuid issue on non-NixOS)
+    # and suppress Chromium stderr log floods (--log-level=3)
     (pkgs.proton-pass.overrideAttrs (old: {
       preFixup = (old.preFixup or "") + ''
-        wrapProgram $out/bin/proton-pass --set ELECTRON_DISABLE_SANDBOX 1
+        wrapProgram $out/bin/proton-pass \
+          --set ELECTRON_DISABLE_SANDBOX 1 \
+          --add-flags "--log-level=3"
       '';
     }))
     pkgs.proton-pass-cli

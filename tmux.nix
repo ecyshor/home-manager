@@ -82,6 +82,9 @@ in
           set -g @resurrect-strategy-nvim 'session'
           ## Restore Panes
           set -g @resurrect-capture-pane-contents 'on'
+          ## Strip Nix wrapper flags (--cmd set packpath/rtp) and /nix/store/.../bin/ paths
+          ## so restored Neovim runs via the PATH wrapper instead of neovim-unwrapped with unquoted --cmd args
+          set -g @resurrect-hook-post-save-layout "${pkgs.gnused}/bin/sed -i -E 's| --cmd set [^ ]*||g; s|/nix/store/[^/[:space:]]*/bin/||g'"
         '';
       }
       {

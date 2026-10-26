@@ -2,7 +2,11 @@
   systemd.user.services.git-pull-home-manager = {
     Unit = {
       Description = "Git pull for home-manager repository";
-      After = [ "network-online.target" ];
+      After = [
+        "network-online.target"
+        "proton-pass-ssh-agent.service"
+      ];
+      Wants = [ "proton-pass-ssh-agent.service" ];
     };
     Service = {
       Type = "oneshot";
