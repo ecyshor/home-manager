@@ -1,6 +1,7 @@
 { pkgs, ... }: {
 
   imports = [
+    ./avante.nix
     ./neo-tree.nix
     ./neogit.nix
     ./nvim-cmp.nix
@@ -74,6 +75,8 @@
           #lsp_doc_border = false;
         };
       };
+      # Backend for noice's notify view (richer popups than the mini fallback)
+      notify.enable = true;
       telescope = {
         enable = true;
         settings.defaults = {
@@ -188,6 +191,30 @@
             desc = "Grep selected text";
             silent = true;
           };
+        }
+        {
+          mode = "n";
+          key = "<leader>naa";
+          action = "<cmd>Noice<cr>";
+          options.desc = "Noice: all messages";
+        }
+        {
+          mode = "n";
+          key = "<leader>nah";
+          action = "<cmd>NoiceHistory<cr>";
+          options.desc = "Noice: message history";
+        }
+        {
+          mode = "n";
+          key = "<leader>nal";
+          action = "<cmd>NoiceLast<cr>";
+          options.desc = "Noice: last message";
+        }
+        {
+          mode = "n";
+          key = "<leader>nae";
+          action = "<cmd>NoiceErrors<cr>";
+          options.desc = "Noice: error history";
         }
    ];
   };
