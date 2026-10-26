@@ -51,6 +51,7 @@
     pkgs.xclip
     pkgs.pmutils
     pkgs.auto-cpufreq
+    pkgs.desktop-file-utils
     # Override proton-pass to disable Electron sandbox (chrome-sandbox setuid issue on non-NixOS)
     (pkgs.proton-pass.overrideAttrs (old: {
       preFixup = (old.preFixup or "") + ''
@@ -76,7 +77,7 @@
     # ".screenrc".source = dotfiles/screenrc;
     ".ssh/config".text = ''
       Host *
-        IdentityAgent ${config.home.homeDirectory}/.local/share/proton-pass/ssh-agent.sock
+        IdentityAgent ${config.home.homeDirectory}/.ssh/proton-pass-agent.sock
     '';
 
 
@@ -119,7 +120,7 @@
   #
   home.sessionVariables = {
     EDITOR = "vim";
-    SSH_AUTH_SOCK = "${config.home.homeDirectory}/.local/share/proton-pass/ssh-agent.sock";
+    SSH_AUTH_SOCK = "${config.home.homeDirectory}/.ssh/proton-pass-agent.sock";
   };
 
   # Register proton-pass as handler for protonpass:// URLs
@@ -198,4 +199,9 @@
     '';
     executable = true;
   };
+
+  # Update desktop database after files are linked (for MIME associations)
+  home.activation.updateDesktopDatabase = lib.hm.dag.entryAfter ["linkGeneration"] ''
+    $DRY_RUN_CMD ${pkgs.desktop-file-utils}/bin/update-desktop-database ${config.home.homeDirectory}/.local/share/applications
+  '';
 }
