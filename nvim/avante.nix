@@ -14,8 +14,8 @@
       # Agent Client Protocol providers; the agent runs as a subprocess of
       # Neovim. Avante spawns ACP agents with a minimal environment (PATH
       # plus the env below), so pass through HOME (to locate ~/.claude and
-      # ~/.vibe) and the D-Bus session vars to reach the OS keyring where
-      # credentials are stored after browser sign-in.
+      # ~/.vibe), D-Bus/XDG session vars (for OS keyring and session tracking),
+      # and TMUX vars so Claude session hooks know which pane hosts Neovim.
       acp_providers = {
         "claude-code" = {
           command = "claude-agent-acp";
@@ -25,11 +25,14 @@
               local env = {
                 NODE_NO_WARNINGS = "1",
                 ACP_PERMISSION_MODE = "bypassPermissions",
+                NVIM = vim.v.servername,
               }
               for _, name in ipairs({
                 "HOME",
                 "DBUS_SESSION_BUS_ADDRESS",
                 "XDG_RUNTIME_DIR",
+                "TMUX",
+                "TMUX_PANE",
                 "ANTHROPIC_API_KEY",
                 "ANTHROPIC_BASE_URL",
               }) do

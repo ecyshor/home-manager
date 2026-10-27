@@ -2,12 +2,42 @@
 
 let
   modifier = "Mod4"; # Super/Windows key
-  terminal = "${pkgs.alacritty}/bin/alacritty";
+  # Patch alacritty with Nixpkgs Mesa/libglvnd RPATH and EGL vendor config so OpenGL
+  # works on non-NixOS (Wayland & X11) without /run/opengl-driver or LD_LIBRARY_PATH.
+  alacritty = pkgs.symlinkJoin {
+    name = "alacritty-${pkgs.alacritty.version}";
+    paths = [ pkgs.alacritty ];
+    nativeBuildInputs = [
+      pkgs.makeWrapper
+      pkgs.patchelf
+    ];
+    postBuild = ''
+      mkdir -p $out/lib/alacritty-glvnd
+      cp -a ${pkgs.libglvnd}/lib/*.so* $out/lib/alacritty-glvnd/
+      chmod -R u+w $out/lib/alacritty-glvnd
+      for f in $out/lib/alacritty-glvnd/*.so*; do
+        if [ -f "$f" ] && [ ! -L "$f" ]; then
+          old_rpath=$(patchelf --print-rpath "$f")
+          patchelf --set-rpath "$out/lib/alacritty-glvnd:${pkgs.mesa}/lib:$old_rpath" "$f"
+        fi
+      done
+
+      rm $out/bin/alacritty
+      cp ${pkgs.alacritty}/bin/alacritty $out/bin/alacritty
+      chmod u+w $out/bin/alacritty
+      old_rpath=$(patchelf --print-rpath $out/bin/alacritty)
+      patchelf --set-rpath "$out/lib/alacritty-glvnd:${pkgs.mesa}/lib:$old_rpath" $out/bin/alacritty
+
+      wrapProgram $out/bin/alacritty \
+        --set __EGL_VENDOR_LIBRARY_DIRS "${pkgs.mesa}/share/glvnd/egl_vendor.d"
+    '';
+  };
+  terminal = "${alacritty}/bin/alacritty";
   menu = "${pkgs.rofi}/bin/rofi -show drun";
 in
 {
   home.packages = [
-    pkgs.alacritty     # terminal
+    alacritty          # terminal
     pkgs.rofi          # application launcher
     pkgs.i3status-rust # status bar
     pkgs.feh           # wallpaper

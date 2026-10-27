@@ -32,6 +32,7 @@
       ";
       shellAbbrs = {
         hms = "home-manager switch";
+        ccs = "claude-sessions";
         nrs = "sudo nixos-rebuild switch";
         psl = "btm --expanded --default_widget_type=proc";
         pst = "btm --expanded --default_widget_type=proc --tree";

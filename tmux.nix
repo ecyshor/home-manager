@@ -115,6 +115,12 @@ in
       bind c new-window -c "#{pane_current_path}"
       # Renumber windows so that indices are always a complete sequence
       set-option -g renumber-windows on
+
+      # Live Claude Code sessions indicator in the status bar + popup switcher (Prefix + C)
+      set -g status-interval 3
+      set -g status-right-length 80
+      set -g status-right "#(claude-sessions --status-bar 2>/dev/null) | %H:%M %d-%b-%y"
+      bind C display-popup -E -w 85% -h 80% "claude-sessions"
     '';
   };
 
