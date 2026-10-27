@@ -9,6 +9,7 @@
   ++ lib.optionals personalLaptop [
     ./avante.nix
     ./antigravity.nix
+    ./claude-code.nix
   ];
   
   home.packages = [ pkgs.zig ];

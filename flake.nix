@@ -39,7 +39,7 @@
             name = "Nicu Reut";
             email = "contact@nicu.dev";
           };
-          # Personal laptop (XPS): mistral-vibe and the agy neovim integration
+          # Personal laptop (XPS): claude-code, mistral-vibe, and AI neovim integrations
           personalLaptop = true;
         };
     };

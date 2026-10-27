@@ -155,6 +155,7 @@
       "1password-cli"
       "1password-gui"
       "antigravity-cli"
+      "claude-code"
       "mistral-vibe"
       "textual-speedups" # Dependency of mistral-vibe; marked unfree in nixpkgs due to lack of upstream license
       "proton-pass"

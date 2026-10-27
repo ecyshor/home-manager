@@ -1,6 +1,7 @@
 { config, pkgs, ... }:
 {
   imports = [
+    ../../claude-code.nix
     ../../mistral-vibe.nix
   ];
 
