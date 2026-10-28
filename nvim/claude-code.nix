@@ -15,7 +15,7 @@
                 last_check = now
                 vim.system({ "claude-sessions", "--status-bar" }, { text = true }, function(obj)
                   if obj.code == 0 and obj.stdout then
-                    cached_status = (obj.stdout:gsub("%s+$", ""))
+                    cached_status = obj.stdout:gsub("%s+$", ""):gsub("%%", "%%%%")
                   end
                 end)
               end

@@ -273,16 +273,37 @@ let
     ];
     text = ''
       STATE_DIR="''${XDG_RUNTIME_DIR:-/tmp}/claude-sessions"
+      VIBE_STATE_DIR="''${XDG_RUNTIME_DIR:-/tmp}/vibe-sessions"
       CACHE_DIR="''${XDG_CACHE_HOME:-$HOME/.cache}/claude-sessions"
-      mkdir -p "$STATE_DIR" "$CACHE_DIR"
+      mkdir -p "$STATE_DIR" "$VIBE_STATE_DIR" "$CACHE_DIR"
 
       prune_dead() {
         shopt -s nullglob
-        for f in "$STATE_DIR"/*.json; do
-          [[ "$(basename "$f")" == "claude-quota.json" ]] && continue
+        for f in "$STATE_DIR"/*.json "$VIBE_STATE_DIR"/*.json; do
+          base="$(basename "$f")"
+          [[ "$base" == "claude-quota.json" || "$base" == "vibe-usage.cache" ]] && continue
           pid="$(jq -r '.pid // empty' "$f" 2>/dev/null || true)"
           if [[ -z "$pid" ]] || ! kill -0 "$pid" 2>/dev/null; then
             rm -f "$f"
+          fi
+        done
+      }
+
+      find_session_file() {
+        local sid="$1"
+        if [[ -f "$STATE_DIR/$sid.json" ]]; then
+          echo "$STATE_DIR/$sid.json"
+          return
+        fi
+        if [[ -f "$VIBE_STATE_DIR/$sid.json" ]]; then
+          echo "$VIBE_STATE_DIR/$sid.json"
+          return
+        fi
+        shopt -s nullglob
+        for vf in "$VIBE_STATE_DIR"/*.json; do
+          if [[ "$(jq -r '.session_id // empty' "$vf" 2>/dev/null || true)" == "$sid" ]]; then
+            echo "$vf"
+            return
           fi
         done
       }
@@ -442,26 +463,51 @@ let
         --status|--status-bar)
           prune_dead
           shopt -s nullglob
-          working=0
-          waiting=0
-          idle=0
+          c_working=0
+          c_waiting=0
+          c_idle=0
           for f in "$STATE_DIR"/*.json; do
             [[ "$(basename "$f")" == "claude-quota.json" ]] && continue
             st="$(jq -r '.state // "idle"' "$f" 2>/dev/null || echo "idle")"
             case "$st" in
-              working) working=$((working + 1)) ;;
-              waiting) waiting=$((waiting + 1)) ;;
-              *)       idle=$((idle + 1)) ;;
+              working) c_working=$((c_working + 1)) ;;
+              waiting) c_waiting=$((c_waiting + 1)) ;;
+              *)       c_idle=$((c_idle + 1)) ;;
+            esac
+          done
+
+          v_working=0
+          v_waiting=0
+          v_idle=0
+          for f in "$VIBE_STATE_DIR"/*.json; do
+            st="$(jq -r '.state // "idle"' "$f" 2>/dev/null || echo "idle")"
+            case "$st" in
+              working) v_working=$((v_working + 1)) ;;
+              waiting) v_waiting=$((v_waiting + 1)) ;;
+              *)       v_idle=$((v_idle + 1)) ;;
             esac
           done
 
           c_quota="$(get_claude_quota_short)"
           m_quota="$(get_vibe_quota_short)"
-          if (( working + waiting + idle > 0 )); then
-            sess="🤖"
-            (( working > 0 )) && sess+=" ''${working}⚡"
-            (( waiting > 0 )) && sess+=" ''${waiting}🔔"
-            (( idle > 0 ))    && sess+=" ''${idle}💤"
+          sess_parts=()
+          if (( c_working + c_waiting + c_idle > 0 )); then
+            c_sess="🤖"
+            (( c_working > 0 )) && c_sess+=" ''${c_working}⚡"
+            (( c_waiting > 0 )) && c_sess+=" ''${c_waiting}🔔"
+            (( c_idle > 0 ))    && c_sess+=" ''${c_idle}💤"
+            sess_parts+=("$c_sess")
+          fi
+          if (( v_working + v_waiting + v_idle > 0 )); then
+            v_sess="🌀"
+            (( v_working > 0 )) && v_sess+=" ''${v_working}⚡"
+            (( v_waiting > 0 )) && v_sess+=" ''${v_waiting}🔔"
+            (( v_idle > 0 ))    && v_sess+=" ''${v_idle}💤"
+            sess_parts+=("$v_sess")
+          fi
+
+          if (( ''${#sess_parts[@]} > 0 )); then
+            sess="''${sess_parts[*]}"
             printf "%s │ %s │ %s\n" "$sess" "$c_quota" "$m_quota"
           else
             printf "%s │ %s\n" "$c_quota" "$m_quota"
@@ -472,7 +518,7 @@ let
           prune_dead
           shopt -s nullglob
           files=()
-          for f in "$STATE_DIR"/*.json; do
+          for f in "$STATE_DIR"/*.json "$VIBE_STATE_DIR"/*.json; do
             [[ "$(basename "$f")" == "claude-quota.json" ]] && continue
             files+=("$f")
           done
@@ -484,21 +530,24 @@ let
             def rank: if .state == "waiting" then 1 elif .state == "working" then 2 else 3 end;
             [inputs] | sort_by(rank, -(.updated_at // 0))[] |
             [
-              .session_id,
-              .state,
-              .project,
-              (.updated_at | tostring),
-              .detail,
-              .cwd,
+              (.session_id // (.pid | tostring)),
+              (.agent // "claude"),
+              (.state // "idle"),
+              (.project // ((.cwd // "unknown") | split("/") | last)),
+              ((.updated_at // 0) | tostring),
+              (.detail // (.state // "idle")),
+              (.cwd // ""),
               (.tmux_target // ""),
               (.nvim_socket // "")
             ] | @tsv
-          ' "''${files[@]}" | while IFS=$'\t' read -r sid state project updated detail cwd tmux_target nvim_sock; do
+          ' "''${files[@]}" | while IFS=$'\t' read -r sid agent state project updated detail cwd tmux_target nvim_sock; do
             age="$(format_age "$updated")"
+            icon="🤖"
+            [[ "$agent" == "vibe" ]] && icon="🌀"
             case "$state" in
-              working) badge=$'\033[1;33m⚡ working\033[0m' ;;
-              waiting) badge=$'\033[1;31m🔔 waiting\033[0m' ;;
-              *)       badge=$'\033[0;36m💤 idle   \033[0m' ;;
+              working) badge="$icon "$'\033[1;33m⚡ working\033[0m' ;;
+              waiting) badge="$icon "$'\033[1;31m🔔 waiting\033[0m' ;;
+              *)       badge="$icon "$'\033[0;36m💤 idle   \033[0m' ;;
             esac
             host_tag="term"
             [[ -n "$tmux_target" ]] && host_tag="tmux:$tmux_target"
@@ -510,16 +559,17 @@ let
 
         --preview)
           sid="''${2:-}"
-          f="$STATE_DIR/$sid.json"
+          f="$(find_session_file "$sid")"
           printf "\033[1;36m%s\033[0m\n" "$(get_quota_header)"
           echo "--------------------------------------------------------"
-          if [[ ! -f "$f" ]]; then
+          if [[ -z "$f" || ! -f "$f" ]]; then
             echo "Session no longer active."
             exit 0
           fi
-          IFS=$'\t' read -r p_project p_state p_cwd p_detail p_pid p_updated p_tmux_sock p_tmux_pane p_tmux_target p_nvim_sock < <(
+          IFS=$'\t' read -r p_agent p_project p_state p_cwd p_detail p_pid p_updated p_tmux_sock p_tmux_pane p_tmux_target p_nvim_sock < <(
             jq -r '[
-              (.project // ""),
+              (.agent // "claude"),
+              (.project // ((.cwd // "") | split("/") | last)),
               (.state // ""),
               (.cwd // ""),
               (.detail // ""),
@@ -532,6 +582,9 @@ let
             ] | @tsv' "$f"
           )
           age="$(format_age "$p_updated")"
+          agent_label="🤖 Claude Code"
+          [[ "$p_agent" == "vibe" ]] && agent_label="🌀 Mistral Vibe"
+          printf "\033[1;34mAgent:\033[0m     %s\n" "$agent_label"
           printf "\033[1;34mProject:\033[0m   %s\n" "$p_project"
           printf "\033[1;34mWorkspace:\033[0m %s\n" "$p_cwd"
           printf "\033[1;34mState:\033[0m     %s (%s ago) - %s\n" "$p_state" "$age" "$p_detail"
@@ -552,10 +605,11 @@ let
 
         --jump)
           sid="''${2:-}"
-          f="$STATE_DIR/$sid.json"
-          [[ ! -f "$f" ]] && exit 0
-          IFS=$'\t' read -r j_cwd j_tmux_sock j_tmux_pane j_tmux_target < <(
+          f="$(find_session_file "$sid")"
+          [[ -z "$f" || ! -f "$f" ]] && exit 0
+          IFS=$'\t' read -r j_agent j_cwd j_tmux_sock j_tmux_pane j_tmux_target < <(
             jq -r '[
+              (.agent // "claude"),
               (.cwd // ""),
               (.tmux_socket // ""),
               (.tmux_pane // ""),
@@ -574,13 +628,18 @@ let
             fi
           elif [[ -d "$j_cwd" ]]; then
             cd "$j_cwd"
-            exec claude --resume "$sid"
+            if [[ "$j_agent" == "vibe" ]]; then
+              exec vibe --resume "$sid"
+            else
+              exec claude --resume "$sid"
+            fi
           fi
           ;;
 
         --delete)
           sid="''${2:-}"
-          rm -f "$STATE_DIR/$sid.json"
+          f="$(find_session_file "$sid")"
+          [[ -n "$f" ]] && rm -f "$f"
           ;;
 
         *)
@@ -666,9 +725,9 @@ in
              ```bash
              timeout -k 10 900 vibe --trust --auto-approve --workdir <dir> --output streaming -p "<self-contained implementation prompt>" </dev/null 2>&1 | tee /tmp/vibe-<task>.log; echo "vibe_exit=''${PIPESTATUS[0]}"
              ```
-           - **CRITICAL (`</dev/null` required):** Always redirect stdin from `/dev/null` (`</dev/null`) when running `vibe -p`. Without `</dev/null`, `vibe` checks non-TTY stdin before running and blocks forever on the Bash tool's open stdin socket (especially when a heredoc `<<'EOF'` is used in the same command), preventing any Vibe session or output from being created.
+           - **CRITICAL (`</dev/null` required):** Always redirect stdin from `/dev/null` (`</dev/null`) when running `vibe -p`. Without `</dev/null`, `vibe` checks non-TTY stdin before running and blocks forever on the Bash tool's open stdin socket (especially when a heredoc `<<'EOF'` is used in the same command), preventing any Vibe session or output from being created. For long or multi-line prompts, write the prompt to `/tmp/vibe-<task>-prompt.txt` first, then run `vibe` with `-p "$(cat /tmp/vibe-<task>-prompt.txt)" </dev/null`.
            - **Visible output & logging (`--output streaming`):** Use `--output streaming` piped through `tee /tmp/vibe-<task>.log` (checking `''${PIPESTATUS[0]}` for Vibe's exit code) so tool calls and progress are logged in real time and verifiable.
-           - **Background daemons & timeouts:** Wrap `vibe` with `timeout -k 10 <secs>` so hung processes are killed with `SIGKILL` if they ignore `SIGTERM`. If a Vibe task must start or restart a long-running background server (e.g. `uvicorn`), specify the exact detached command `setsid -f bash -c '... </dev/null >/tmp/<daemon>.log 2>&1'` in the prompt so the child process does not inherit Vibe's tool stdout pipe and hang Vibe indefinitely.
+           - **Background daemons, timeouts & watchers:** Wrap `vibe` with `timeout -k 10 <secs>` so hung processes are killed with `SIGKILL` if they ignore `SIGTERM`. When polling background or parallel `vibe` tasks, monitor `/tmp/vibe-<task>.log` mtime and `kill -9` any stalled tasks rather than waiting indefinitely on process exit. If a Vibe task must start or restart a long-running background server (e.g. `uvicorn`), specify the exact detached command `setsid -f bash -c '... </dev/null >/tmp/<daemon>.log 2>&1'` in the prompt so the child process does not inherit Vibe's tool stdout pipe and hang Vibe indefinitely.
          - Pass a self-contained specification to Mistral Vibe: exact file paths, required behavior, surrounding context, and project conventions.
 
       3. **Review & Verify (Claude Code)**
@@ -677,6 +736,55 @@ in
            - Run relevant builds, tests, or typechecks to verify the changes.
            - Check for correctness, regressions, edge cases, and style conformance.
          - Apply small targeted fixes yourself if needed during review, or delegate follow-up adjustments back to Mistral Vibe.
+
+      ## New Project Setup: Nix Flakes + direnv (`nix/flake.nix` + `.envrc`)
+
+      Whenever creating or initializing **any new project** (or setting up an environment for a project that does not have one yet), always set up **direnv + Nix with Flakes** inside a `nix/` subdirectory (following the layout from https://nicu.dev/dirnev-nix-shell adapted to Flakes) and include all required project dependencies:
+
+      1. **Create `nix/flake.nix`** with all required project dependencies (language runtimes, compilers, package managers, build tools, linters, native libraries, etc.) in `pkgs.mkShell`:
+         ```nix
+         {
+           description = "Development environment";
+
+           inputs = {
+             nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+           };
+
+           outputs = { self, nixpkgs }:
+             let
+               supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+               forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+             in
+             {
+               devShells = forAllSystems (system:
+                 let
+                   pkgs = import nixpkgs { inherit system; };
+                 in
+                 {
+                   default = pkgs.mkShell {
+                     buildInputs = with pkgs; [
+                       # Include all needed project dependencies here
+                     ];
+                   };
+                 }
+               );
+             };
+         }
+         ```
+      2. **Create `.envrc` in the project root** to watch and load `nix/flake.nix`:
+         ```bash
+         #!/usr/bin/env bash
+
+         watch_file nix/flake.nix
+         watch_file nix/flake.lock
+
+         use flake ./nix
+         ```
+      3. **Git tracking & activation**:
+         - Add `.direnv/` to `.gitignore`.
+         - If the project is a Git repository, stage `nix/flake.nix` (`git add nix/flake.nix`) before evaluating the flake (Nix Flakes ignores untracked files in a Git repo).
+         - Run `direnv allow` and verify the environment loads cleanly (e.g. via `direnv exec . <cmd>` or `nix develop ./nix -c <cmd>`).
+         - Whenever additional tools or dependencies are needed, add them to `nix/flake.nix` under `buildInputs`.
     '';
 
     # Custom subagent (~/.claude/agents/mistral-vibe.md) for handing off implementation tasks.
