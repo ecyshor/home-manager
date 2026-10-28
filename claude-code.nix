@@ -664,13 +664,16 @@ in
          - Hand over basic implementation, boilerplate generation, routine edits, and straightforward refactors to Mistral Vibe:
            - Spawn the `mistral-vibe` subagent via the `Agent` (`Task`) tool (launch multiple subagents in parallel for independent modules/files when appropriate), or invoke `vibe` directly via Bash:
              ```bash
-             vibe --trust --auto-approve -p "<self-contained implementation prompt>"
+             timeout -k 10 900 vibe --trust --auto-approve --workdir <dir> --output streaming -p "<self-contained implementation prompt>" </dev/null 2>&1 | tee /tmp/vibe-<task>.log; echo "vibe_exit=''${PIPESTATUS[0]}"
              ```
+           - **CRITICAL (`</dev/null` required):** Always redirect stdin from `/dev/null` (`</dev/null`) when running `vibe -p`. Without `</dev/null`, `vibe` checks non-TTY stdin before running and blocks forever on the Bash tool's open stdin socket (especially when a heredoc `<<'EOF'` is used in the same command), preventing any Vibe session or output from being created.
+           - **Visible output & logging (`--output streaming`):** Use `--output streaming` piped through `tee /tmp/vibe-<task>.log` (checking `''${PIPESTATUS[0]}` for Vibe's exit code) so tool calls and progress are logged in real time and verifiable.
+           - **Background daemons & timeouts:** Wrap `vibe` with `timeout -k 10 <secs>` so hung processes are killed with `SIGKILL` if they ignore `SIGTERM`. If a Vibe task must start or restart a long-running background server (e.g. `uvicorn`), specify the exact detached command `setsid -f bash -c '... </dev/null >/tmp/<daemon>.log 2>&1'` in the prompt so the child process does not inherit Vibe's tool stdout pipe and hang Vibe indefinitely.
          - Pass a self-contained specification to Mistral Vibe: exact file paths, required behavior, surrounding context, and project conventions.
 
       3. **Review & Verify (Claude Code)**
          - Once Mistral Vibe completes the implementation, **review its output**:
-           - Inspect the resulting changes (`git status`, `git diff`, and reading modified files).
+           - Inspect the resulting changes (`git status`, `git diff`, and reading modified files) and verify the Vibe log/session.
            - Run relevant builds, tests, or typechecks to verify the changes.
            - Check for correctness, regressions, edge cases, and style conformance.
          - Apply small targeted fixes yourself if needed during review, or delegate follow-up adjustments back to Mistral Vibe.
@@ -682,20 +685,29 @@ in
       name: mistral-vibe
       description: Delegates basic code implementation, boilerplate generation, refactoring, and routine file edits to the Mistral Vibe CLI (`vibe`). Use this subagent after planning to hand over implementation work and return the diff for review.
       tools: Bash, Read, Grep, Glob
+      omitClaudeMd: true
       ---
 
       You are a subagent wrapper around the Mistral Vibe CLI (`vibe`). Your role is to execute implementation tasks planned by the main Claude Code agent using `vibe` in programmatic mode and report the results back for review.
 
       ## Execution Steps
 
-      1. Invoke Mistral Vibe non-interactively with workspace trust and tool auto-approval enabled:
+      1. Invoke Mistral Vibe non-interactively with workspace trust, tool auto-approval, streaming output, `timeout -k 10`, and stdin closed (`</dev/null`):
          ```bash
-         vibe --trust --auto-approve -p "<detailed implementation instructions>"
+         timeout -k 10 900 vibe --trust --auto-approve --workdir <dir> --output streaming -p "<detailed implementation instructions>" </dev/null 2>&1 | tee /tmp/vibe-<task>.log
+         echo "vibe_exit=''${PIPESTATUS[0]}"
          ```
+         - **CRITICAL (`</dev/null`):** Always include `</dev/null` on the `vibe` command. Without `</dev/null`, `vibe -p` attempts to read from non-TTY stdin and blocks forever on the Bash tool's open stdin socket (especially if your command used a `<<'EOF'` heredoc to write a prompt file) before a session is even created.
+         - For long or multi-line prompts, write the prompt to `/tmp/vibe-<task>-prompt.txt` first, then run `vibe` with `-p "$(cat /tmp/vibe-<task>-prompt.txt)" </dev/null`.
+         - If the task starts or restarts a background daemon/server, instruct `vibe` to launch it detached with `setsid -f bash -c '... </dev/null >/tmp/<daemon>.log 2>&1'` so it does not hold open Vibe's tool stdout pipe.
          - Include all file paths, function signatures, conventions, and constraints from the parent agent's plan in the prompt passed to `-p`.
-         - Use `--workdir <dir>` if the task targets a specific subdirectory.
-      2. After `vibe` exits, inspect what changed using `git status --short` and `git diff --stat` (or by reading the modified files if not in a git repository).
-      3. Return a concise summary of `vibe`'s output and the modified files so the parent Claude Code agent can review the changes. Do not re-implement the changes yourself unless `vibe` fails to execute.
+         - Do not spend turns reading or exploring the codebase yourself before calling `vibe` unless necessary—`vibe` has its own file reading and editing tools.
+      2. After `vibe` exits, inspect what changed using `git status --short` and `git diff --stat` (or by diffing before/after copies if not in a git repository), and check the latest session directory in `~/.vibe/logs/session/`.
+      3. Return a concise report to the parent Claude Code agent containing:
+         - The Vibe session ID (`~/.vibe/logs/session/session_*`), exit code, and log file path (`/tmp/vibe-<task>.log`).
+         - A summary of the tool calls `vibe` executed and its final output.
+         - The modified files / diff summary and any build/test output so the parent agent can review the changes.
+         - Do not re-implement the changes yourself unless `vibe` fails to execute.
     '';
   };
 }
