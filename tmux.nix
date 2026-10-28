@@ -59,10 +59,12 @@ in
     newSession = true;
     # Stop tmux+escape craziness.
     escapeTime = 0;
+    focusEvents = true;
+    mouse = true;
     # Force tmux to use /tmp for sockets (WSL2 compat)
     secureSocket = false;
     shell = "${pkgs.fish}/bin/fish";
-    terminal = "screen-256color";
+    terminal = "tmux-256color";
 
     plugins = with pkgs; [
       tmuxPlugins.better-mouse-mode
@@ -101,14 +103,14 @@ in
     extraConfig = ''
       # increase timeout to select pane
       set -g display-panes-time 4000
-      # https://old.reddit.com/r/tmux/comments/mesrci/tmux_2_doesnt_seem_to_use_256_colors/
-      set -g default-terminal "tmux-256color"
-      #set -ga terminal-overrides ",*256col*:Tc"
-      #set -ga terminal-overrides "*:Ss=\E[%p1%d q:Se=\E[ q"
-      #set-environment -g COLORTERM "truecolor"
 
-      # Mouse works as expected
-      set-option -g mouse on
+      # Truecolor, extended keys (Shift+Enter in Claude Code / Mistral Vibe),
+      # DCS passthrough (\ePtmux;...\e\ used by both Claude & Vibe), and OSC 52 clipboard
+      set -as terminal-features ",*:RGB,*:extkeys"
+      set -s extended-keys on
+      set -g allow-passthrough on
+      set -g set-clipboard on
+
       # easy-to-remember split pane commands
       bind "|" split-window -h -c "#{pane_current_path}"
       bind - split-window -v -c "#{pane_current_path}"

@@ -25,6 +25,8 @@
 
     # Settings
     opts = {
+      autoread = true;
+      updatetime = 1000;
       expandtab = true;
       shiftwidth = 2;
       smartindent = true;
@@ -33,6 +35,22 @@
       relativenumber = true; # Show relative line numbers
       clipboard = "unnamedplus";
     };
+
+    autoCmd = [
+      {
+        event = [
+          "FocusGained"
+          "BufEnter"
+          "CursorHold"
+          "CursorHoldI"
+          "TermClose"
+          "TermLeave"
+        ];
+        pattern = "*";
+        command = "if mode() !~ '\\v(c|r.?|!|t)' && getcmdwintype() == '' | checktime | endif";
+        desc = "Auto-reload buffers changed on disk when unmodified";
+      }
+    ];
 
     # Keymaps
     globals = {
