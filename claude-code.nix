@@ -708,7 +708,7 @@ let
     - After merging, think about how the incoming features interact with this branch's (new tables/columns, filters, hooks) — not only textual conflicts. Fix and test integration gaps before pushing.
 
     ## 3. Verify (never push red)
-    - Run the project's full test suite and builds (README "Testing", AGENTS.md, CI workflow). For photo-timeline use the `photo-timeline-dev` skill (worktree-safe pytest + frontend build).
+    - Run the project's full test suite and builds (README "Testing", AGENTS.md, CI workflow); if the repo ships a project skill for dev/test/run (e.g. `.claude/skills/*-dev`), use it.
     - Update any "last verified" test counts in the docs if the repo keeps them.
 
     ## 4. Push + merge to main
@@ -718,51 +718,11 @@ let
     - A local `main` checked out in another folder may hold another session's unpushed commits: don't touch it; report it instead.
 
     ## 5. After pushing
-    - Local servers: if a backend / dev server runs from this checkout, make sure it serves the new code (photo-timeline: see `photo-timeline-dev`); report what was restarted.
+    - Local servers: if a backend / dev server runs from this checkout, make sure it serves the new code (see the repo's dev/run skill if it has one); report what was restarted.
     - CI: `gh run list --branch main --limit 5`; watch the new run (`gh run watch <id> --exit-status`) when the user asked for green CI, and fix failures even if unrelated.
 
     ## 6. Report
     Commits pushed (short SHAs + subjects), what was merged in, conflicts and how they were resolved, test/build results with counts, anything left (other checkouts' unpushed commits, skipped steps).
-  '';
-
-  photoTimelineDevSkill = ''
-    ---
-    name: photo-timeline-dev
-    description: How to test, build, run and restart the photo-timeline (takepho) app — worktree-safe pytest, frontend build, uvicorn + Vite dev servers, LAN access, stale-server checks and Mistral Vibe hazards in this repo. Use whenever working in ~/workspace/photo-timeline or its .claude/worktrees.
-    ---
-
-    # photo-timeline: test, build, run
-
-    Main checkout: ~/workspace/photo-timeline (shared .venv lives there). Worktrees: ~/workspace/photo-timeline/.claude/worktrees/NAME. Stay inside the current checkout; servers on 8000 / 5173 usually belong to the main checkout.
-
-    ## Tests
-    - Backend, from the checkout root: `scripts/run_python.sh scripts/wt_pytest.py -q` — it swaps the venv's sitecustomize paths (which point at the MAIN checkout) for this checkout's backends and prints `wt_pytest: common from <path>`; check that path is this checkout. Plain `scripts/run_python.sh -m pytest -q` works in the main checkout.
-    - Don't call `.venv/bin/python` directly (libstdc++ / rapidgzip import errors); always go through `scripts/run_python.sh`.
-    - Test file basenames must be unique across all test dirs (pytest.ini, prepend import mode).
-    - Frontend: `direnv exec . npm run build` and `direnv exec . npm run typecheck` (npm workspace at the repo root; node comes from the direnv shell).
-    - E2E (Playwright): see README "Testing"; CI runs them too.
-
-    ## Run / restart servers
-    - Backend (detached so it never holds a tool pipe): `setsid -f bash -c 'cd CHECKOUT && exec scripts/start_backend.sh </dev/null >/tmp/backend.log 2>&1'` (uvicorn common.main:app on 0.0.0.0:8000 with --reload).
-    - Vite: `setsid -f bash -c 'cd CHECKOUT && exec direnv exec . npm run dev -- --host 0.0.0.0 --port 5173 --strictPort </dev/null >/tmp/vite.log 2>&1'` (the `--` is required; other sessions may own 5174/5175).
-    - Stop by PID in its own call (`ps -eo pid,lstart,args | grep -E '[u]vicorn|[v]ite'`, then `kill PID`). Never `pkill -f <pattern>` in a command whose own text contains the pattern — it kills the tool shell.
-    - Before restarting the backend, check nothing is running: `curl -s localhost:8000/api/ingest/active` and running pipeline runs.
-    - After commits/merges/pulls the user wants local processes on the latest code: compare the uvicorn/vite start time with changed files and restart what's stale; report it.
-    - Stale Vite modules happen: verify what Vite serves before trusting a screenshot — `curl -s http://localhost:5173/@fs/ABS_PATH.tsx | grep CHANGED_TEXT`; restart Vite if stale.
-    - Throwaway instance from a worktree (e.g. port 8765/8001): set `DATA_DIR` to a scratch dir (and `FRONTEND_DIST` for the built UI) so the user's data is untouched.
-    - LAN access for the phone: `ip -4 addr show scope global | grep inet` → http://LAN_IP:5173 (server must listen on 0.0.0.0).
-
-    ## Browser checks
-    Use the Playwright MCP server (`mcp__playwright__*`) against http://localhost:5173: navigate, snapshot, check the console for errors, screenshot. Prefer it over ad-hoc chromium scripts.
-
-    ## Mistral Vibe in this repo
-    - Always use `vibe-task TASK --dir .` (or `vibe-task TASK --resume` for follow-ups). Write the prompt to `/tmp/vibe-TASK-prompt.txt` first.
-    - Never run two Vibe jobs in the same tree (they `git checkout` each other's edits); use separate worktrees or run sequentially.
-    - Vibe runs the tests and updates docs as part of its task. Use `qrun wt-test -- scripts/run_python.sh scripts/wt_pytest.py -q` to validate after Vibe finishes.
-    - Review findings go back to Vibe via `vibe-task TASK --resume`; fix only tiny (<= 5 line) things yourself.
-
-    ## Shell hygiene
-    Heredocs and `$(...)` combined with timeout, `git -C`, `cd X && git`, loops running git/claude, or `eval` trip the worktree guard / permission prompts: write files with Write/Edit and run plain, separate commands.
   '';
 in
 {
@@ -818,7 +778,6 @@ in
 
     skills = {
       ship = shipSkill;
-      photo-timeline-dev = photoTimelineDevSkill;
     };
 
     settings = {
