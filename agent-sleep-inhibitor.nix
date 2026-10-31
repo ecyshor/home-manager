@@ -44,6 +44,20 @@ let
         fi
       }
 
+      # On AC power the battery threshold is irrelevant: always allow inhibiting.
+      on_ac_power() {
+        shopt -s nullglob
+        local d t o
+        for d in /sys/class/power_supply/*; do
+          [[ -r "$d/type" && -r "$d/online" ]] || continue
+          read -r t < "$d/type" || continue
+          [[ "$t" == "Mains" ]] || continue
+          read -r o < "$d/online" || continue
+          [[ "$o" == "1" ]] && return 0
+        done
+        return 1
+      }
+
       # Pure bash check (zero subprocess forks) over session JSON files
       has_active_agent() {
         shopt -s nullglob
@@ -73,8 +87,15 @@ let
             updated="''${BASH_REMATCH[1]}"
           fi
 
-          if [[ "$state" == "working" ]] && (( now - updated < STALE_WORKING_SECS )); then
-            return 0
+          if [[ "$state" == "working" ]]; then
+            # Vibe writes its state in-process and only on turn transitions, so a
+            # single long turn (e.g. a 60-minute delegated task) never refreshes
+            # updated_at; the PID liveness check above is sufficient for it.
+            # Claude state comes from hooks and can get stuck at "working" when a
+            # turn is interrupted (no Stop hook), so keep the staleness guard.
+            if [[ "$f" == "$VIBE_DIR"/* ]] || (( now - updated < STALE_WORKING_SECS )); then
+              return 0
+            fi
           fi
         done
 
@@ -86,7 +107,7 @@ let
           return
         fi
 
-        local reason="Claude/Mistral agent actively working (battery >= ''${MIN_BATTERY_PCT}%)"
+        local reason="Claude/Mistral agent actively working (on AC or battery >= ''${MIN_BATTERY_PCT}%)"
         if [[ -S "$RUNTIME_DIR/bus" ]]; then
           export DBUS_SESSION_BUS_ADDRESS="unix:path=$RUNTIME_DIR/bus"
           systemd-inhibit \
@@ -115,7 +136,7 @@ let
       while true; do
         if has_active_agent; then
           get_battery_pct
-          if (( REPLY >= MIN_BATTERY_PCT )); then
+          if on_ac_power || (( REPLY >= MIN_BATTERY_PCT )); then
             start_inhibitor
           else
             stop_inhibitor
@@ -141,7 +162,7 @@ in
 
   systemd.user.services.agent-sleep-inhibitor = {
     Unit = {
-      Description = "Inhibit idle sleep while Claude Code or Mistral Vibe agents are working (if battery >= 30%)";
+      Description = "Inhibit idle sleep while Claude Code or Mistral Vibe agents are working (on AC or battery >= 30%)";
       After = [ "graphical-session.target" "dbus.service" ];
     };
     Service = {

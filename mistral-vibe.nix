@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{ pkgs, git, ... }: {
   home.file.".vibe/config.toml".force = true;
   home.file.".vibe/AGENTS.md" = {
     force = true;
@@ -61,7 +61,7 @@
         setsid -f bash -c '<command> </dev/null >/tmp/<daemon>.log 2>&1'
         ```
       - **Stopping processes safely**: Never run `pkill -f "<pattern>"` or `pgrep -f "<pattern>"` with a literal string in the same subshell command (e.g. `pkill -f "uvicorn app.main" && ...`), because it matches the shell's own command line and kills the subshell itself (exit 144). Always use a bracketed character class (e.g. `pkill -f "[u]vicorn app.main"`) or resolve the PID in a separate step.
-    '';
+    '' + "\n" + import ./agent-commit-policy.nix git;
   };
   programs.mistral-vibe = {
     enable = true;

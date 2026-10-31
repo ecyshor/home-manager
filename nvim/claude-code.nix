@@ -97,7 +97,64 @@
       vim.cmd("startinsert")
     end
 
+    local function claude_buffer_dir()
+      local bufname = vim.api.nvim_buf_get_name(0)
+      if bufname ~= "" and vim.bo.buftype == "" then
+        local dir = vim.fn.fnamemodify(bufname, ":p:h")
+        if vim.fn.isdirectory(dir) == 1 then
+          return dir
+        end
+      end
+      return vim.fn.getcwd()
+    end
+
+    local function claude_tmux_split(worktree)
+      if not os.getenv("TMUX") then
+        vim.notify("Not running inside a tmux session", vim.log.levels.WARN)
+        return
+      end
+      local dir = claude_buffer_dir()
+      local cmd = {
+        "tmux",
+        "split-window",
+        "-h",
+        "-l",
+        "40%",
+        "-c",
+        dir,
+        "${pkgs.claude-code}/bin/claude",
+      }
+      if worktree and worktree ~= "" then
+        table.insert(cmd, "-w")
+        table.insert(cmd, worktree)
+      end
+      vim.system(cmd, { text = true }, function(obj)
+        if obj.code ~= 0 then
+          vim.schedule(function()
+            vim.notify(
+              "Failed to open tmux split: " .. (obj.stderr or ""),
+              vim.log.levels.ERROR
+            )
+          end)
+        end
+      end)
+    end
+
+    local function claude_tmux_worktree()
+      vim.ui.input({ prompt = "Claude worktree name: " }, function(input)
+        if not input then
+          return
+        end
+        local name = vim.trim(input)
+        if name ~= "" then
+          claude_tmux_split(name)
+        end
+      end)
+    end
+
     vim.keymap.set("n", "<leader>cc", claude_toggle, { desc = "Toggle Claude Code floating terminal" })
     vim.keymap.set("n", "<leader>cs", claude_sessions_picker, { desc = "Claude Code sessions overview" })
+    vim.keymap.set("n", "<leader>ct", function() claude_tmux_split(nil) end, { desc = "Claude Code in tmux split (buffer dir)" })
+    vim.keymap.set("n", "<leader>cw", claude_tmux_worktree, { desc = "Claude Code in tmux split (git worktree)" })
   '';
 }

@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, git, ... }:
 let
   claude-quota-refresh = pkgs.writeShellApplication {
     name = "claude-quota-refresh";
@@ -186,7 +186,7 @@ let
             STATE="waiting"
           fi
           DETAIL="$MSG"
-          notify-send -a "Claude Code" "Claude Code ($(basename "''${CWD:-workspace}"))" "$MSG" 2>/dev/null || true
+          # Desktop notifications disabled; state is tracked via the status bar.
           ;;
         Stop)
           STATE="idle"
@@ -704,6 +704,12 @@ in
         Stop = hookEntry;
         SessionEnd = hookEntry;
       };
+      # No Claude co-author trailers / "Generated with Claude Code" footers.
+      attribution = {
+        commit = "";
+        pr = "";
+      };
+      includeCoAuthoredBy = false;
     };
 
     # Global instructions (~/.claude/CLAUDE.md): Claude Code plans & reviews,
@@ -785,7 +791,7 @@ in
          - If the project is a Git repository, stage `nix/flake.nix` (`git add nix/flake.nix`) before evaluating the flake (Nix Flakes ignores untracked files in a Git repo).
          - Run `direnv allow` and verify the environment loads cleanly (e.g. via `direnv exec . <cmd>` or `nix develop ./nix -c <cmd>`).
          - Whenever additional tools or dependencies are needed, add them to `nix/flake.nix` under `buildInputs`.
-    '';
+    '' + "\n" + import ./agent-commit-policy.nix git;
 
     # Custom subagent (~/.claude/agents/mistral-vibe.md) for handing off implementation tasks.
     agents.mistral-vibe = ''

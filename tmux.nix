@@ -123,6 +123,10 @@ in
       set -g status-right-length 80
       set -g status-right "#(claude-sessions --status-bar 2>/dev/null) | %H:%M %d-%b-%y"
       bind C display-popup -E -w 85% -h 80% "claude-sessions"
+
+      # Spawn Claude Code in a right-hand split (Prefix + a) or isolated git worktree (Prefix + A)
+      bind a split-window -h -l 40% -c "#{pane_current_path}" "claude"
+      bind A command-prompt -p "Claude worktree:" "split-window -h -l 40% -c '#{pane_current_path}' 'claude -w \"%%\"'"
     '';
   };
 

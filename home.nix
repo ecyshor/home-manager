@@ -1,4 +1,4 @@
-{ config, pkgs, git, lib, ... }:
+{ config, pkgs, git, lib, flakeSelf, ... }:
 
 {
   # Home Manager needs a bit of information about you and the paths it should
@@ -16,7 +16,6 @@
   home.stateVersion = "23.11"; # Please read the comment before changing.
 
   imports = [
-    ./git-sync.nix
     ./fish.nix 
     ./tmux.nix 
     ./fzf.nix 
@@ -209,4 +208,8 @@
   home.activation.updateDesktopDatabase = lib.hm.dag.entryAfter ["linkGeneration"] ''
     $DRY_RUN_CMD ${pkgs.desktop-file-utils}/bin/update-desktop-database ${config.home.homeDirectory}/.local/share/applications
   '';
+
+  # Record which flake source tree is currently applied. The repo's .envrc compares
+  # this with `nix flake metadata` to warn when `home-manager switch` is pending.
+  home.file.".local/state/home-manager-applied-source".text = "${flakeSelf}";
 }

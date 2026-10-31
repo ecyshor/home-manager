@@ -16,7 +16,7 @@
 
   };
 
-  outputs = { nixpkgs, home-manager, nixvim, ... }:
+  outputs = { self, nixpkgs, home-manager, nixvim, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -35,6 +35,9 @@
         # Optionally use extraSpecialArgs
         # to pass through arguments to home.nix
         extraSpecialArgs = {
+          # Flake source store path; recorded on activation so the repo .envrc can
+          # tell whether the checked-out tree still needs `home-manager switch`.
+          flakeSelf = self;
           git = {
             name = "Nicu Reut";
             email = "contact@nicu.dev";
@@ -58,6 +61,9 @@
       # Optionally use extraSpecialArgs
       # to pass through arguments to home.nix
       extraSpecialArgs = {
+        # Flake source store path; recorded on activation so the repo .envrc can
+        # tell whether the checked-out tree still needs `home-manager switch`.
+        flakeSelf = self;
         git = {
           name = "Nicu Reut";
           email = "nicu.reut@digitalasset.com";
