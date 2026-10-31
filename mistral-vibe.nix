@@ -1,4 +1,7 @@
 { pkgs, git, ... }: {
+  # vibe-task / qrun: delegation helpers used by Claude Code
+  imports = [ ./vibe-task.nix ];
+
   home.file.".vibe/config.toml".force = true;
   home.file.".vibe/AGENTS.md" = {
     force = true;
@@ -61,6 +64,14 @@
         setsid -f bash -c '<command> </dev/null >/tmp/<daemon>.log 2>&1'
         ```
       - **Stopping processes safely**: Never run `pkill -f "<pattern>"` or `pgrep -f "<pattern>"` with a literal string in the same subshell command (e.g. `pkill -f "uvicorn app.main" && ...`), because it matches the shell's own command line and kills the subshell itself (exit 144). Always use a bracketed character class (e.g. `pkill -f "[u]vicorn app.main"`) or resolve the PID in a separate step.
+
+      ## Delegated Runs (from Claude Code)
+
+      Programmatic runs (`vibe -p`) usually come from Claude Code via `vibe-task`. Claude only reviews your diff and final report, so: finish the whole task (code, tests, docs), run the full test suite / build / typecheck yourself and fix what you broke, never weaken test infrastructure to get green, never ask questions (state assumptions instead), and always end with the `## REPORT` section the prompt asks for.
+
+      ## Browser Checks
+
+      Use the `playwright` MCP server for UI verification: navigate, take accessibility snapshots, check console errors and network failures. Report findings as text; save screenshots under /tmp/vibe-playwright only when asked.
     '' + "\n" + import ./agent-commit-policy.nix git;
   };
   programs.mistral-vibe = {
@@ -138,9 +149,22 @@ TurnController._write_vibe_session_state = _turn_controller_write_vibe_session_s
 EOF
       '';
     });
-    # Custom settings can be added here, e.g.:
-    # settings = {
-    #   theme = "auto";
-    # };
+    settings = {
+      # Browser checks delegated by Claude Code (accessibility snapshots instead of
+      # screenshots in Claude's context). The nixpkgs build ships its own Chromium.
+      mcp_servers = [
+        {
+          name = "playwright";
+          transport = "stdio";
+          command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+          args = [
+            "--headless"
+            "--isolated"
+            "--output-dir"
+            "/tmp/vibe-playwright"
+          ];
+        }
+      ];
+    };
   };
 }

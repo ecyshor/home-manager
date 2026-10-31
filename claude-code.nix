@@ -676,6 +676,94 @@ let
       ];
     }
   ];
+  # Pinned plugin sources (update: `nix flake prefetch github:<owner>/<repo>/<rev>` → rev + hash)
+  claude-plugins-official = pkgs.fetchFromGitHub {
+    owner = "anthropics";
+    repo = "claude-plugins-official";
+    rev = "a7ba5b93db0c7c8d17f3f1d25853adca79598a1a";
+    hash = "sha256-C8uTRCtKEvL7dz+dDbfs/DwU/uxH5YzYFDn0oo3BKnA=";
+  };
+
+  shipSkill = ''
+    ---
+    name: ship
+    description: Commit, merge the latest origin/main, verify, push and merge to main, then make sure local servers and CI are current. Use when the user says "commit and merge", "commit, push", "push everything", "merge to main", "make sure everything is committed pushed and merged", or "check the status".
+    ---
+
+    # Ship: commit → merge origin/main → verify → push → main
+
+    Work only in the current checkout/worktree (worktree sessions refuse `git -C` or `cd` into other checkouts).
+
+    ## 1. Commit
+    - `git status --short`; read every uncommitted change before committing (Vibe may have touched unrelated files, conftest.py or pytest.ini — revert those unless intended).
+    - If the repo has AGENTS.md rules (e.g. keep PLAN.md / README.md current), make sure the docs match the change.
+    - Commit with `git commit -s` (identity Nicu Reut <contact@nicu.dev>). Never add AI co-author lines, AI sign-offs or "Generated with" footers.
+    - Check every unpushed commit: `git log --format='%h %s%n%(trailers)' origin/main..HEAD`. Exactly one `Signed-off-by: Nicu Reut <contact@nicu.dev>`, no `Co-Authored-By`. If an unpushed commit is wrong, rewrite it (non-interactive: `GIT_SEQUENCE_EDITOR=true git rebase <base> --exec <script that amends the message>`), then confirm the tree is unchanged with `git diff --stat <old-head> HEAD`. Never rewrite pushed commits.
+
+    ## 2. Fetch + merge origin/main
+    - SSH push/fetch usually has no key here; use HTTPS with gh's credential helper. Repo URL from `git remote get-url origin` (git@github.com:OWNER/REPO.git → https://github.com/OWNER/REPO.git):
+      `git -c credential.helper='!gh auth git-credential' fetch https://github.com/OWNER/REPO.git +refs/heads/main:refs/remotes/origin/main`
+    - `git rev-list --left-right --count origin/main...HEAD`; if origin/main has new commits, `git merge --no-edit origin/main`.
+    - Conflicts: docs (PLAN.md, README.md, changelogs) usually keep both sides; code: read both sides, keep both behaviours. Commit the merge with `git commit --no-edit -s`.
+    - After merging, think about how the incoming features interact with this branch's (new tables/columns, filters, hooks) — not only textual conflicts. Fix and test integration gaps before pushing.
+
+    ## 3. Verify (never push red)
+    - Run the project's full test suite and builds (README "Testing", AGENTS.md, CI workflow). For photo-timeline use the `photo-timeline-dev` skill (worktree-safe pytest + frontend build).
+    - Update any "last verified" test counts in the docs if the repo keeps them.
+
+    ## 4. Push + merge to main
+    - Fast-forward only: push the branch and main in one go:
+      `git -c credential.helper='!gh auth git-credential' push https://github.com/OWNER/REPO.git HEAD:refs/heads/BRANCH HEAD:refs/heads/main`
+    - If the push is rejected (main moved), go back to step 2. Never force-push main.
+    - A local `main` checked out in another folder may hold another session's unpushed commits: don't touch it; report it instead.
+
+    ## 5. After pushing
+    - Local servers: if a backend / dev server runs from this checkout, make sure it serves the new code (photo-timeline: see `photo-timeline-dev`); report what was restarted.
+    - CI: `gh run list --branch main --limit 5`; watch the new run (`gh run watch <id> --exit-status`) when the user asked for green CI, and fix failures even if unrelated.
+
+    ## 6. Report
+    Commits pushed (short SHAs + subjects), what was merged in, conflicts and how they were resolved, test/build results with counts, anything left (other checkouts' unpushed commits, skipped steps).
+  '';
+
+  photoTimelineDevSkill = ''
+    ---
+    name: photo-timeline-dev
+    description: How to test, build, run and restart the photo-timeline (takepho) app — worktree-safe pytest, frontend build, uvicorn + Vite dev servers, LAN access, stale-server checks and Mistral Vibe hazards in this repo. Use whenever working in ~/workspace/photo-timeline or its .claude/worktrees.
+    ---
+
+    # photo-timeline: test, build, run
+
+    Main checkout: ~/workspace/photo-timeline (shared .venv lives there). Worktrees: ~/workspace/photo-timeline/.claude/worktrees/NAME. Stay inside the current checkout; servers on 8000 / 5173 usually belong to the main checkout.
+
+    ## Tests
+    - Backend, from the checkout root: `scripts/run_python.sh scripts/wt_pytest.py -q` — it swaps the venv's sitecustomize paths (which point at the MAIN checkout) for this checkout's backends and prints `wt_pytest: common from <path>`; check that path is this checkout. Plain `scripts/run_python.sh -m pytest -q` works in the main checkout.
+    - Don't call `.venv/bin/python` directly (libstdc++ / rapidgzip import errors); always go through `scripts/run_python.sh`.
+    - Test file basenames must be unique across all test dirs (pytest.ini, prepend import mode).
+    - Frontend: `direnv exec . npm run build` and `direnv exec . npm run typecheck` (npm workspace at the repo root; node comes from the direnv shell).
+    - E2E (Playwright): see README "Testing"; CI runs them too.
+
+    ## Run / restart servers
+    - Backend (detached so it never holds a tool pipe): `setsid -f bash -c 'cd CHECKOUT && exec scripts/start_backend.sh </dev/null >/tmp/backend.log 2>&1'` (uvicorn common.main:app on 0.0.0.0:8000 with --reload).
+    - Vite: `setsid -f bash -c 'cd CHECKOUT && exec direnv exec . npm run dev -- --host 0.0.0.0 --port 5173 --strictPort </dev/null >/tmp/vite.log 2>&1'` (the `--` is required; other sessions may own 5174/5175).
+    - Stop by PID in its own call (`ps -eo pid,lstart,args | grep -E '[u]vicorn|[v]ite'`, then `kill PID`). Never `pkill -f <pattern>` in a command whose own text contains the pattern — it kills the tool shell.
+    - Before restarting the backend, check nothing is running: `curl -s localhost:8000/api/ingest/active` and running pipeline runs.
+    - After commits/merges/pulls the user wants local processes on the latest code: compare the uvicorn/vite start time with changed files and restart what's stale; report it.
+    - Stale Vite modules happen: verify what Vite serves before trusting a screenshot — `curl -s http://localhost:5173/@fs/ABS_PATH.tsx | grep CHANGED_TEXT`; restart Vite if stale.
+    - Throwaway instance from a worktree (e.g. port 8765/8001): set `DATA_DIR` to a scratch dir (and `FRONTEND_DIST` for the built UI) so the user's data is untouched.
+    - LAN access for the phone: `ip -4 addr show scope global | grep inet` → http://LAN_IP:5173 (server must listen on 0.0.0.0).
+
+    ## Browser checks
+    Use the Playwright MCP server (`mcp__playwright__*`) against http://localhost:5173: navigate, snapshot, check the console for errors, screenshot. Prefer it over ad-hoc chromium scripts.
+
+    ## Mistral Vibe in this repo
+    - Always use `vibe-task TASK --dir .` (or `vibe-task TASK --resume` for follow-ups). Write the prompt to `/tmp/vibe-TASK-prompt.txt` first.
+    - Never run two Vibe jobs in the same tree (they `git checkout` each other's edits); use separate worktrees or run sequentially.
+    - Vibe runs the tests and updates docs as part of its task. Use `qrun wt-test -- scripts/run_python.sh scripts/wt_pytest.py -q` to validate after Vibe finishes.
+    - Review findings go back to Vibe via `vibe-task TASK --resume`; fix only tiny (<= 5 line) things yourself.
+
+    ## Shell hygiene
+    Heredocs and `$(...)` combined with timeout, `git -C`, `cd X && git`, loops running git/claude, or `eval` trip the worktree guard / permission prompts: write files with Write/Edit and run plain, separate commands.
+  '';
 in
 {
   home.packages = [
@@ -689,7 +777,72 @@ in
     enable = true;
     mutableSettings = true;
 
+    # Plugins pinned in Nix (symlinked as personal plugins; bump rev + hash to update)
+    plugins = {
+      frontend-design = "${claude-plugins-official}/plugins/frontend-design";
+      security-guidance = "${claude-plugins-official}/plugins/security-guidance";
+    };
+
+    # Code intelligence (replaces the pyright-lsp / typescript-lsp marketplace plugins)
+    lspServers = {
+      pyright = {
+        command = "${pkgs.pyright}/bin/pyright-langserver";
+        args = [ "--stdio" ];
+        extensionToLanguage = {
+          ".py" = "python";
+          ".pyi" = "python";
+        };
+      };
+      typescript = {
+        command = "${pkgs.typescript-language-server}/bin/typescript-language-server";
+        args = [ "--stdio" ];
+        extensionToLanguage = {
+          ".ts" = "typescript";
+          ".tsx" = "typescriptreact";
+          ".js" = "javascript";
+          ".jsx" = "javascriptreact";
+          ".mts" = "typescript";
+          ".cts" = "typescript";
+          ".mjs" = "javascript";
+          ".cjs" = "javascript";
+        };
+      };
+    };
+
+    # Browser automation (replaces the playwright marketplace plugin's `npx @playwright/mcp@latest`;
+    # the nixpkgs build ships its own Chromium)
+    mcpServers.playwright = {
+      type = "stdio";
+      command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+    };
+
+    skills = {
+      ship = shipSkill;
+      photo-timeline-dev = photoTimelineDevSkill;
+    };
+
     settings = {
+      theme = "dark";
+      permissions = {
+        blockReadsOutsideWorkingDirectories = false;
+        # Delegation + cheap verification run without permission prompts
+        allow = [
+          "Bash(vibe-task:*)"
+          "Bash(qrun:*)"
+          "Bash(git status:*)"
+          "Bash(git diff:*)"
+          "Bash(git log:*)"
+          "Bash(git show:*)"
+        ];
+      };
+      env = {
+        # Subagents (Explore etc.) do grunt work; keep them off Opus
+        CLAUDE_CODE_SUBAGENT_MODEL = "haiku";
+        # Cap accidental log / test / diff dumps into the context
+        BASH_MAX_OUTPUT_LENGTH = "12000";
+        # Mild context cap: keep the 1M model but auto-compact around ~300k tokens
+        CLAUDE_CODE_AUTO_COMPACT_WINDOW = "300000";
+      };
       statusLine = {
         type = "command";
         command = "${claude-statusline}/bin/claude-statusline";
@@ -712,116 +865,66 @@ in
       includeCoAuthoredBy = false;
     };
 
-    # Global instructions (~/.claude/CLAUDE.md): Claude Code plans & reviews,
-    # delegating basic implementation work to Mistral Vibe (`vibe`).
+    # Global instructions (~/.claude/CLAUDE.md): Claude Code orchestrates & reviews,
+    # delegating all implementation, test execution, debugging, and docs to Mistral Vibe (`vibe-task`).
     context = ''
-      # Default Workflow: Plan with Claude Code, Delegate Implementation to Mistral Vibe, Review Output
+      # Strict Delegation Workflow: Claude Code Orchestrates, Mistral Vibe Implements & Tests
 
-      Act as the lead architect, planner, and code reviewer. To use tokens and subagents efficiently, do not write routine or basic implementation code directly when it can be handed over to **Mistral Vibe** (`vibe`).
+      Act strictly as the lead architect, specification writer, and code reviewer.
+      To minimize Claude token consumption, delegate all heavy lifting and grunt work to **Mistral Vibe** (`vibe-task`), including:
+      - Writing and editing code, boilerplate, refactorings, migrations
+      - Running test suites, typechecks, linters, and debugging test failures until green
+      - Updating documentation (PLAN.md, README.md, AGENTS.md status, changelogs)
+      - Starting/restarting background daemons and running curl/API smoke checks
+      - Investigating codebases for "how does X work" or "where is Y defined"
 
-      ## Workflow
+      ## 1. Plan & Specify (Claude Code)
+      - Explore files lightly if needed, or run `vibe-task <name> --readonly` for broad code investigations to keep Claude's context small.
+      - Formulate a clear, self-contained specification: target files, function signatures, constraints, and testing expectations.
+      - Write the prompt directly to `/tmp/vibe-<task>-prompt.txt` using the Write tool (do not use complex bash heredocs that trip shell guards). Note that `vibe-task` automatically prepends standard house rules (commit policies, test rules, detached daemon rules, and the final `## REPORT` format requirement).
 
-      1. **Plan (Claude Code)**
-         - Analyze the request, explore the relevant files (`Read`, `Grep`, `Glob`), and resolve architectural and design questions.
-         - Formulate a clear, concrete implementation plan specifying target files, function/type signatures, edge cases, and verification steps.
+      ## 2. Delegate to Mistral Vibe (`vibe-task`)
+      - Run the task non-interactively via the `vibe-task` helper:
+        ```bash
+        vibe-task <task> --dir <dir>
+        ```
+      - **Always launch long-running or parallel tasks with `run_in_background: true`** via the Bash tool. DO NOT poll in a loop with `sleep`, `tail`, `until`, or periodic log reads—each polling turn wastes thousands of context tokens. Wait for the background task completion notification.
+      - If Vibe needs to address review findings, update `/tmp/vibe-<task>-prompt.txt` with concise feedback and run with `--resume`:
+        ```bash
+        vibe-task <task> --resume --dir <dir>
+        ```
+        This continues Vibe's previous session with full context, avoiding re-explaining the whole task.
 
-      2. **Delegate Implementation (Mistral Vibe Subagent)**
-         - Hand over basic implementation, boilerplate generation, routine edits, and straightforward refactors to Mistral Vibe:
-           - Spawn the `mistral-vibe` subagent via the `Agent` (`Task`) tool (launch multiple subagents in parallel for independent modules/files when appropriate), or invoke `vibe` directly via Bash:
-             ```bash
-             timeout -k 10 900 vibe --trust --auto-approve --workdir <dir> --output streaming -p "<self-contained implementation prompt>" </dev/null 2>&1 | tee /tmp/vibe-<task>.log; echo "vibe_exit=''${PIPESTATUS[0]}"
-             ```
-           - **CRITICAL (`</dev/null` required):** Always redirect stdin from `/dev/null` (`</dev/null`) when running `vibe -p`. Without `</dev/null`, `vibe` checks non-TTY stdin before running and blocks forever on the Bash tool's open stdin socket (especially when a heredoc `<<'EOF'` is used in the same command), preventing any Vibe session or output from being created. For long or multi-line prompts, write the prompt to `/tmp/vibe-<task>-prompt.txt` first, then run `vibe` with `-p "$(cat /tmp/vibe-<task>-prompt.txt)" </dev/null`.
-           - **Visible output & logging (`--output streaming`):** Use `--output streaming` piped through `tee /tmp/vibe-<task>.log` (checking `''${PIPESTATUS[0]}` for Vibe's exit code) so tool calls and progress are logged in real time and verifiable.
-           - **Background daemons, timeouts & watchers:** Wrap `vibe` with `timeout -k 10 <secs>` so hung processes are killed with `SIGKILL` if they ignore `SIGTERM`. When polling background or parallel `vibe` tasks, monitor `/tmp/vibe-<task>.log` mtime and `kill -9` any stalled tasks rather than waiting indefinitely on process exit. If a Vibe task must start or restart a long-running background server (e.g. `uvicorn`), specify the exact detached command `setsid -f bash -c '... </dev/null >/tmp/<daemon>.log 2>&1'` in the prompt so the child process does not inherit Vibe's tool stdout pipe and hang Vibe indefinitely.
-         - Pass a self-contained specification to Mistral Vibe: exact file paths, required behavior, surrounding context, and project conventions.
-
-      3. **Review & Verify (Claude Code)**
-         - Once Mistral Vibe completes the implementation, **review its output**:
-           - Inspect the resulting changes (`git status`, `git diff`, and reading modified files) and verify the Vibe log/session.
-           - Run relevant builds, tests, or typechecks to verify the changes.
-           - Check for correctness, regressions, edge cases, and style conformance.
-         - Apply small targeted fixes yourself if needed during review, or delegate follow-up adjustments back to Mistral Vibe.
-
-      ## New Project Setup: Nix Flakes + direnv (`nix/flake.nix` + `.envrc`)
-
-      Whenever creating or initializing **any new project** (or setting up an environment for a project that does not have one yet), always set up **direnv + Nix with Flakes** inside a `nix/` subdirectory (following the layout from https://nicu.dev/dirnev-nix-shell adapted to Flakes) and include all required project dependencies:
-
-      1. **Create `nix/flake.nix`** with all required project dependencies (language runtimes, compilers, package managers, build tools, linters, native libraries, etc.) in `pkgs.mkShell`:
-         ```nix
-         {
-           description = "Development environment";
-
-           inputs = {
-             nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-           };
-
-           outputs = { self, nixpkgs }:
-             let
-               supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-               forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-             in
-             {
-               devShells = forAllSystems (system:
-                 let
-                   pkgs = import nixpkgs { inherit system; };
-                 in
-                 {
-                   default = pkgs.mkShell {
-                     buildInputs = with pkgs; [
-                       # Include all needed project dependencies here
-                     ];
-                   };
-                 }
-               );
-             };
-         }
-         ```
-      2. **Create `.envrc` in the project root** to watch and load `nix/flake.nix`:
-         ```bash
-         #!/usr/bin/env bash
-
-         watch_file nix/flake.nix
-         watch_file nix/flake.lock
-
-         use flake ./nix
-         ```
-      3. **Git tracking & activation**:
-         - Add `.direnv/` to `.gitignore`.
-         - If the project is a Git repository, stage `nix/flake.nix` (`git add nix/flake.nix`) before evaluating the flake (Nix Flakes ignores untracked files in a Git repo).
-         - Run `direnv allow` and verify the environment loads cleanly (e.g. via `direnv exec . <cmd>` or `nix develop ./nix -c <cmd>`).
-         - Whenever additional tools or dependencies are needed, add them to `nix/flake.nix` under `buildInputs`.
+      ## 3. Validate & Review Output (Claude Code)
+      - `vibe-task` automatically suppresses noisy tool logs and outputs:
+        1. Exit status, duration, and token usage
+        2. `git diff --stat`
+        3. Vibe's structured `## REPORT` (status, changed files, test verification results, assumptions, open items)
+      - **Review the diff**: Check `git status --short` and inspect only the relevant diffs (`git diff -- <file>`) to verify correctness, regressions, and style.
+      - **Quick validation**: If you want to independently verify Vibe's claims, use `qrun` to execute tests/builds quietly without polluting Claude's context with thousands of lines:
+        ```bash
+        qrun check-tests -- pytest -q
+        ```
+        `qrun` outputs only a single summary line on success, or the failure tail on error.
+      - Edit files directly ONLY for trivial <= 5 line fixes discovered during review. If larger adjustments are needed, send them back to Vibe via `vibe-task <task> --resume`.
     '' + "\n" + import ./agent-commit-policy.nix git;
 
     # Custom subagent (~/.claude/agents/mistral-vibe.md) for handing off implementation tasks.
     agents.mistral-vibe = ''
       ---
       name: mistral-vibe
-      description: Delegates basic code implementation, boilerplate generation, refactoring, and routine file edits to the Mistral Vibe CLI (`vibe`). Use this subagent after planning to hand over implementation work and return the diff for review.
+      description: Delegates implementation, test execution, debugging, and file edits to Mistral Vibe (`vibe-task`). Use this subagent to offload coding work and receive a concise diff report.
       tools: Bash, Read, Grep, Glob
+      model: haiku
       omitClaudeMd: true
       ---
 
-      You are a subagent wrapper around the Mistral Vibe CLI (`vibe`). Your role is to execute implementation tasks planned by the main Claude Code agent using `vibe` in programmatic mode and report the results back for review.
+      You are a lightweight subagent wrapper running on Haiku. Your role is to trigger `vibe-task` to execute implementation tasks planned by the main agent and report the results back.
 
       ## Execution Steps
-
-      1. Invoke Mistral Vibe non-interactively with workspace trust, tool auto-approval, streaming output, `timeout -k 10`, and stdin closed (`</dev/null`):
-         ```bash
-         timeout -k 10 900 vibe --trust --auto-approve --workdir <dir> --output streaming -p "<detailed implementation instructions>" </dev/null 2>&1 | tee /tmp/vibe-<task>.log
-         echo "vibe_exit=''${PIPESTATUS[0]}"
-         ```
-         - **CRITICAL (`</dev/null`):** Always include `</dev/null` on the `vibe` command. Without `</dev/null`, `vibe -p` attempts to read from non-TTY stdin and blocks forever on the Bash tool's open stdin socket (especially if your command used a `<<'EOF'` heredoc to write a prompt file) before a session is even created.
-         - For long or multi-line prompts, write the prompt to `/tmp/vibe-<task>-prompt.txt` first, then run `vibe` with `-p "$(cat /tmp/vibe-<task>-prompt.txt)" </dev/null`.
-         - If the task starts or restarts a background daemon/server, instruct `vibe` to launch it detached with `setsid -f bash -c '... </dev/null >/tmp/<daemon>.log 2>&1'` so it does not hold open Vibe's tool stdout pipe.
-         - Include all file paths, function signatures, conventions, and constraints from the parent agent's plan in the prompt passed to `-p`.
-         - Do not spend turns reading or exploring the codebase yourself before calling `vibe` unless necessary—`vibe` has its own file reading and editing tools.
-      2. After `vibe` exits, inspect what changed using `git status --short` and `git diff --stat` (or by diffing before/after copies if not in a git repository), and check the latest session directory in `~/.vibe/logs/session/`.
-      3. Return a concise report to the parent Claude Code agent containing:
-         - The Vibe session ID (`~/.vibe/logs/session/session_*`), exit code, and log file path (`/tmp/vibe-<task>.log`).
-         - A summary of the tool calls `vibe` executed and its final output.
-         - The modified files / diff summary and any build/test output so the parent agent can review the changes.
-         - Do not re-implement the changes yourself unless `vibe` fails to execute.
+      1. Ensure the task prompt is written to `/tmp/vibe-<task>-prompt.txt`.
+      2. Run `vibe-task <task> --dir <dir>` (or with `--resume` if continuing an earlier task).
+      3. Report the exit status, changed files, and the `## REPORT` summary block directly back to the parent agent. Do not re-implement or modify code yourself.
     '';
   };
 }
