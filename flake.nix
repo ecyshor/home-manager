@@ -9,6 +9,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Newer nixpkgs pin used only for proton-drive-cli (absent from the main pin;
+    # bumping the main pin breaks the mistral-vibe override).
+    nixpkgs-proton.url = "github:nixos/nixpkgs/e338dea6276803157d93bf2210283556ecc7febd";
+
     nixvim = {
         url = "github:nix-community/nixvim";
         inputs.nixpkgs.follows = "nixpkgs";
@@ -16,7 +20,7 @@
 
   };
 
-  outputs = { self, nixpkgs, home-manager, nixvim, ... }:
+  outputs = { self, nixpkgs, nixpkgs-proton, home-manager, nixvim, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -44,6 +48,7 @@
           };
           # Personal laptop (XPS): claude-code, mistral-vibe, and AI neovim integrations
           personalLaptop = true;
+          protonPkgs = nixpkgs-proton.legacyPackages.${system};
         };
     };
     homeConfigurations."nicu@nicu-da-dell-pro-max" = home-manager.lib.homeManagerConfiguration {

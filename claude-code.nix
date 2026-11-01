@@ -687,10 +687,12 @@ let
   shipSkill = ''
     ---
     name: ship
-    description: Commit, merge the latest origin/main, verify, push and merge to main, then make sure local servers and CI are current. Use when the user says "commit and merge", "commit, push", "push everything", "merge to main", "make sure everything is committed pushed and merged", or "check the status".
+    description: Commit, merge the latest origin/main, verify, push the branch and open (or update) a PR against main for the user to squash-merge, then make sure local servers and CI are current. Use when the user says "commit and merge", "commit, push", "push everything", "merge to main", "open a PR", "make sure everything is committed pushed and merged", or "check the status".
     ---
 
-    # Ship: commit → merge origin/main → verify → push → main
+    # Ship: commit → merge origin/main → verify → push branch → PR
+
+    Everything lands through PRs. NEVER push to main and NEVER merge a PR (`gh pr merge` is forbidden): the user approves by squash-merging it themselves. Only squash merges are enabled; the PR title becomes the commit subject and the PR body the commit message.
 
     Work only in the current checkout/worktree (worktree sessions refuse `git -C` or `cd` into other checkouts).
 
@@ -711,18 +713,20 @@ let
     - Run the project's full test suite and builds (README "Testing", AGENTS.md, CI workflow); if the repo ships a project skill for dev/test/run (e.g. `.claude/skills/*-dev`), use it.
     - Update any "last verified" test counts in the docs if the repo keeps them.
 
-    ## 4. Push + merge to main
-    - Fast-forward only: push the branch and main in one go:
-      `git -c credential.helper='!gh auth git-credential' push https://github.com/OWNER/REPO.git HEAD:refs/heads/BRANCH HEAD:refs/heads/main`
-    - If the push is rejected (main moved), go back to step 2. Never force-push main.
+    ## 4. Push the branch + open the PR
+    - If you are on `main`, first create a branch (`git switch -c <short-topic>`). If this branch's previous PR was already squash-merged, the old commits are on main as one squash commit: step 2's merge of origin/main covers that, or start a fresh branch from origin/main.
+    - Push only the branch, never main:
+      `git -c credential.helper='!gh auth git-credential' push https://github.com/OWNER/REPO.git HEAD:refs/heads/BRANCH`
+    - If the push is rejected because the remote branch moved, fetch it and merge, then retry. Force-push only your own PR branch, and only when it is unavoidable.
+    - Open the PR, or update it if one is already open (`gh pr view BRANCH`): `gh pr create --base main --head BRANCH --title "<subject>" --body-file <file>`, or `gh pr edit` for an existing one. The title is the squash commit subject. The body becomes the commit message, so: a short summary of the change and its testing, ending with exactly one line `Signed-off-by: Nicu Reut <contact@nicu.dev>`, and no AI co-author lines, sign-offs or "Generated with" footers.
     - A local `main` checked out in another folder may hold another session's unpushed commits: don't touch it; report it instead.
 
     ## 5. After pushing
-    - Local servers: if a backend / dev server runs from this checkout, make sure it serves the new code (see the repo's dev/run skill if it has one); report what was restarted.
-    - CI: `gh run list --branch main --limit 5`; watch the new run (`gh run watch <id> --exit-status`) when the user asked for green CI, and fix failures even if unrelated.
+    - CI: `gh pr checks BRANCH`; watch the run (`gh run watch <id> --exit-status`) when the user asked for green CI, and fix failures on the branch.
+    - Local servers serve main: restart them only after the user has merged and you have pulled (see the repo's dev/run skill if it has one).
 
     ## 6. Report
-    Commits pushed (short SHAs + subjects), what was merged in, conflicts and how they were resolved, test/build results with counts, anything left (other checkouts' unpushed commits, skipped steps).
+    PR URL, commits pushed (short SHAs + subjects), what was merged in, conflicts and how they were resolved, test/build results with counts, CI status, anything left (other checkouts' unpushed commits, skipped steps). Remind the user that the PR is waiting for them to squash-merge it.
   '';
 in
 {
@@ -792,6 +796,10 @@ in
           "Bash(git diff:*)"
           "Bash(git log:*)"
           "Bash(git show:*)"
+          # Pulumi deploys of the takepho infra (user OK'd, 2026-11-01); pulumi isn't on PATH,
+          # so it runs through nix shell
+          "Bash(pulumi up:*)"
+          "Bash(nix shell nixpkgs#pulumi-bin nixpkgs#nodejs -c pulumi up:*)"
         ];
       };
       env = {

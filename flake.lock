@@ -57,6 +57,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-proton": {
+      "locked": {
+        "lastModified": 1793023126,
+        "narHash": "sha256-3jkBZQSp+9TaqXmVD2AxPQ2ZDlwnatzYorrrGjmmpjI=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "e338dea6276803157d93bf2210283556ecc7febd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "e338dea6276803157d93bf2210283556ecc7febd",
+        "type": "github"
+      }
+    },
     "nixvim": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -83,6 +99,7 @@
       "inputs": {
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-proton": "nixpkgs-proton",
         "nixvim": "nixvim"
       }
     },

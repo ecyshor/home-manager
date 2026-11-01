@@ -3,6 +3,7 @@
   imports = [
     ../../claude-code.nix
     ../../mistral-vibe.nix
+    ../../proton-drive.nix
   ];
 
   home.packages = [
