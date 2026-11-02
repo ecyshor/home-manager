@@ -34,6 +34,8 @@ let
   };
   terminal = "${alacritty}/bin/alacritty";
   menu = "${pkgs.rofi}/bin/rofi -show drun";
+  greenclip = "${pkgs.haskellPackages.greenclip}/bin/greenclip";
+  clipboard = "${pkgs.rofi}/bin/rofi -modi clipboard:${greenclip} print -show clipboard -run-command '{cmd}'";
 in
 {
   home.packages = [
@@ -46,7 +48,20 @@ in
     pkgs.brightnessctl # brightness keys
     pkgs.pavucontrol   # audio control
     pkgs.maim          # screenshots
+    pkgs.alacritty                # terminal
+    pkgs.rofi                     # application launcher
+    pkgs.i3status-rust            # status bar
+    pkgs.feh                      # wallpaper
+    pkgs.dunst                    # notifications
+    pkgs.playerctl                # media keys
+    pkgs.brightnessctl            # brightness keys
+    pkgs.pavucontrol              # audio control
+    pkgs.maim                     # screenshots
     pkgs.xclip
+    # --- GNOME extension parity ---
+    pkgs.haskellPackages.greenclip # clipboard history (clipboard-indicator)
+    pkgs.snixembed                # SNI -> XEmbed tray bridge (ubuntu-appindicators)
+    pkgs.networkmanagerapplet     # nm-applet network tray icon
   ];
 
   # Enable the X session so a display manager (or startx) can launch i3.
@@ -66,6 +81,7 @@ in
           # Launchers
           "${modifier}+Return" = "exec ${terminal}";
           "${modifier}+d" = "exec ${menu}";
+          "${modifier}+Shift+v" = "exec ${clipboard}"; # clipboard history (greenclip)
           "${modifier}+Shift+q" = "kill";
 
           # Focus (vim-style)
@@ -110,6 +126,7 @@ in
         bars = [{
           statusCommand = "${pkgs.i3status-rust}/bin/i3status-rs ${config.xdg.configHome}/i3status-rust/config-default.toml";
           position = "top";
+          trayOutput = "primary"; # show system tray / appindicators here
           fonts = {
             names = [ "FiraCode Nerd Font" ];
             size = 10.0;
@@ -118,6 +135,12 @@ in
 
         startup = [
           { command = "${pkgs.dunst}/bin/dunst"; notification = false; }
+          # Clipboard history daemon (clipboard-indicator parity)
+          { command = "${greenclip} daemon"; notification = false; }
+          # Bridge StatusNotifierItem apps into the i3bar XEmbed tray
+          # (ubuntu-appindicators parity, e.g. 1Password, nm-applet)
+          { command = "${pkgs.snixembed}/bin/snixembed"; notification = false; }
+          { command = "${pkgs.networkmanagerapplet}/bin/nm-applet"; notification = false; }
         ];
       };
     };
@@ -128,6 +151,9 @@ in
     enable = true;
     bars.default = {
       blocks = [
+        { block = "net"; format = " $icon $speed_down $speed_up "; interval = 2; }
+        { block = "temperature"; format = " $icon $max "; interval = 5; }
+        { block = "load"; format = " $icon $1m "; interval = 1; }
         { block = "cpu"; interval = 1; }
         { block = "memory"; format = " $icon $mem_used_percents "; }
         { block = "disk_space"; path = "/"; info_type = "available"; interval = 60; warning = 20.0; alert = 10.0; }
