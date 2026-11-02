@@ -874,6 +874,9 @@ in
         ```
         `qrun` outputs only a single summary line on success, or the failure tail on error.
       - Edit files directly ONLY for trivial <= 5 line fixes discovered during review. If larger adjustments are needed, send them back to Vibe via `vibe-task <task> --resume`.
+
+      ## Pull Requests: Open in Browser
+      - Right after opening (or updating) a PR, open it in the user's browser with `gh pr view <branch-or-number> --web` (fallback: `xdg-open <pr-url>`).
     '' + "\n" + import ./agent-commit-policy.nix git;
 
     # Custom subagent (~/.claude/agents/mistral-vibe.md) for handing off implementation tasks.
