@@ -48,15 +48,6 @@ in
     pkgs.brightnessctl # brightness keys
     pkgs.pavucontrol   # audio control
     pkgs.maim          # screenshots
-    pkgs.alacritty                # terminal
-    pkgs.rofi                     # application launcher
-    pkgs.i3status-rust            # status bar
-    pkgs.feh                      # wallpaper
-    pkgs.dunst                    # notifications
-    pkgs.playerctl                # media keys
-    pkgs.brightnessctl            # brightness keys
-    pkgs.pavucontrol              # audio control
-    pkgs.maim                     # screenshots
     pkgs.xclip
     # --- GNOME extension parity ---
     pkgs.haskellPackages.greenclip # clipboard history (clipboard-indicator)
