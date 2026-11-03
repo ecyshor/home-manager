@@ -722,7 +722,7 @@ let
     - A local `main` checked out in another folder may hold another session's unpushed commits: don't touch it; report it instead.
 
     ## 5. After pushing
-    - CI: `gh pr checks BRANCH`; watch the run (`gh run watch <id> --exit-status`) when the user asked for green CI, and fix failures on the branch.
+    - CI: always wait for the PR checks (`gh pr checks BRANCH --watch` in the background, or `gh run watch <id> --exit-status`) and fix every failure on the branch — including ones already failing on main — until all checks are green. Only a cause confirmed to be outside the code (e.g. a missing repo secret) may be left, and it must be reported explicitly.
     - Local servers serve main: restart them only after the user has merged and you have pulled (see the repo's dev/run skill if it has one).
 
     ## 6. Report
@@ -875,8 +875,9 @@ in
         `qrun` outputs only a single summary line on success, or the failure tail on error.
       - Edit files directly ONLY for trivial <= 5 line fixes discovered during review. If larger adjustments are needed, send them back to Vibe via `vibe-task <task> --resume`.
 
-      ## Pull Requests: Open in Browser
+      ## Pull Requests: Open in Browser, Then Get CI Green
       - Right after opening (or updating) a PR, open it in the user's browser with `gh pr view <branch-or-number> --web` (fallback: `xdg-open <pr-url>`).
+      - A PR is not done until its checks are green (or it is merged): wait for them (`gh pr checks <pr> --watch`, run in the background), investigate every failure — including ones already failing on main — and fix them on the branch. Only report a check as unfixable from the code (e.g. a missing repo secret) after confirming the cause, and say so explicitly.
     '' + "\n" + import ./agent-commit-policy.nix git;
 
     # Custom subagent (~/.claude/agents/mistral-vibe.md) for handing off implementation tasks.
