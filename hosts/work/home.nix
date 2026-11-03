@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 {
   imports = [
     ./fish.nix
@@ -6,6 +6,9 @@
   home.packages = [
   ];
   home.file = {
+    ".ssh/config".text = lib.mkBefore ''
+      Include ${config.home.homeDirectory}/.config/sandboxes/sandboxes/ssh/config
+    '';
     ".config/1Password/ssh/agent.toml".text = ''
       [[ssh-keys]]
       vault = "Digital Asset"
