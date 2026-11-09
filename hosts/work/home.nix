@@ -2,6 +2,7 @@
 {
   imports = [
     ./fish.nix
+    ../../thermald-no-adaptive.nix
   ];
   home.packages = [
   ];

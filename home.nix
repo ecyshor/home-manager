@@ -97,7 +97,7 @@
      energy_performance_preference = performance
      # Force the Bias to performance to match the EPP
      energy_perf_bias = performance
-     turbo = always
+     turbo = auto
 
      [battery]
      governor = powersave
