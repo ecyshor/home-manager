@@ -4,6 +4,7 @@
     ./neo-tree.nix
     ./neogit.nix
     ./nvim-cmp.nix
+    ./terminal.nix
   ]
   # AI integrations live only on the personal laptop (XPS)
   ++ lib.optionals personalLaptop [

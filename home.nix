@@ -45,6 +45,7 @@
     pkgs.bottom
     pkgs.jq
     pkgs.go
+    pkgs.nodejs
     pkgs._1password-cli
     pkgs._1password-gui
     pkgs.gnumake
