@@ -1,5 +1,7 @@
-{ pkgs, git, ... }:
+{ pkgs, lib, git, ... }:
 let
+  openCmd = if pkgs.stdenv.hostPlatform.isDarwin then "open" else "xdg-open";
+
   claude-quota-refresh = pkgs.writeShellApplication {
     name = "claude-quota-refresh";
     runtimeInputs = [
@@ -105,11 +107,10 @@ let
     runtimeInputs = [
       pkgs.coreutils
       pkgs.jq
-      pkgs.libnotify
       pkgs.procps
       pkgs.tmux
       claude-quota-refresh
-    ];
+    ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.libnotify ];
     text = ''
       if [[ "''${CLAUDE_QUOTA_PROBE:-}" == "1" ]]; then
         exit 0
@@ -141,15 +142,25 @@ let
       CLAUDE_PID="$PPID"
       curr="$PPID"
       for _ in 1 2 3 4 5 6; do
-        if [[ ! -r "/proc/$curr/comm" ]]; then
+        if [[ -r "/proc/$curr/comm" ]]; then
+          comm="$(tr -d '\0\n' < "/proc/$curr/comm" || true)"
+        else
+          # No /proc (macOS): ask the system ps; comm may be a full path there
+          comm="$(/bin/ps -o comm= -p "$curr" 2>/dev/null || true)"
+          comm="''${comm##*/}"
+        fi
+        if [[ -z "$comm" ]]; then
           break
         fi
-        comm="$(tr -d '\0\n' < "/proc/$curr/comm" || true)"
         if [[ "$comm" == "claude" || "$comm" == ".claude-wrapped" ]]; then
           CLAUDE_PID="$curr"
           break
         fi
-        next_ppid="$(awk '/^PPid:/ { print $2 }' "/proc/$curr/status" 2>/dev/null || true)"
+        if [[ -r "/proc/$curr/status" ]]; then
+          next_ppid="$(awk '/^PPid:/ { print $2 }' "/proc/$curr/status" 2>/dev/null || true)"
+        else
+          next_ppid="$(/bin/ps -o ppid= -p "$curr" 2>/dev/null | tr -d ' ' || true)"
+        fi
         if [[ -z "$next_ppid" || "$next_ppid" -le 1 ]]; then
           break
         fi
@@ -876,7 +887,7 @@ in
       - Edit files directly ONLY for trivial <= 5 line fixes discovered during review. If larger adjustments are needed, send them back to Vibe via `vibe-task <task> --resume`.
 
       ## Pull Requests: Open in Browser, Then Get CI Green
-      - Right after opening (or updating) a PR, open it in the user's browser with `gh pr view <branch-or-number> --web` (fallback: `xdg-open <pr-url>`).
+      - Right after opening (or updating) a PR, open it in the user's browser with `gh pr view <branch-or-number> --web` (fallback: `${openCmd} <pr-url>`).
       - A PR is not done until its checks are green (or it is merged): wait for them (`gh pr checks <pr> --watch`, run in the background), investigate every failure — including ones already failing on main — and fix them on the branch. Only report a check as unfixable from the code (e.g. a missing repo secret) after confirming the cause, and say so explicitly.
     '' + "\n" + import ./agent-commit-policy.nix git;
 

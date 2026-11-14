@@ -1,4 +1,4 @@
-{ pkgs, lib, personalLaptop, ... }: {
+{ pkgs, lib, personalLaptop, antigravity, ... }: {
 
   imports = [
     ./neo-tree.nix
@@ -9,8 +9,10 @@
   # AI integrations live only on the personal laptop (XPS)
   ++ lib.optionals personalLaptop [
     ./avante.nix
-    ./antigravity.nix
     ./claude-code.nix
+  ]
+  ++ lib.optionals (personalLaptop && antigravity) [
+    ./antigravity.nix
   ];
   
   home.packages = [ pkgs.zig ];

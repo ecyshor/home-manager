@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 let
   # fix for https://github.com/tmux-plugins/tmux-resurrect/issues/287
   fix-tmux-resurrect-script = pkgs.writeShellScriptBin "fix-tmux-resurrect" ''
@@ -71,7 +71,7 @@ in
       {
         plugin = tmuxPlugins.yank;
         extraConfig = ''
-          set -g @override_copy_command 'xclip -in -selection clipboard'
+          set -g @override_copy_command '${if pkgs.stdenv.hostPlatform.isDarwin then "pbcopy" else "xclip -in -selection clipboard"}'
         '';
       }
       {
@@ -155,7 +155,7 @@ in
   ];
 
   
-  systemd.user.services.fix-tmux-resurrect = {
+  systemd.user.services.fix-tmux-resurrect = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     Unit = {
       Description = "Fix empty tmux-resurrect 'last' file on startup";
       # This service doesn't need network or anything complex
@@ -171,6 +171,18 @@ in
     Install = {
       # This ensures the service is started when you log in
       WantedBy = [ "default.target" ];
+    };
+  };
+
+  # macOS: same fix, run once at login by launchd
+  launchd.agents.fix-tmux-resurrect = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+    enable = true;
+    # Start via a launcher named after the agent, so System Settings > Login Items
+    # shows "fix-tmux-resurrect" instead of "sh" (/nix is mounted at boot, before login).
+    waitForNixStore = false;
+    config = {
+      ProgramArguments = [ "${fix-tmux-resurrect-script}/bin/fix-tmux-resurrect" ];
+      RunAtLoad = true;
     };
   };
 }

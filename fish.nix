@@ -1,4 +1,4 @@
-{ pkgs,  ... }:
+{ pkgs, lib, ... }:
 {
   programs.fish = {
       enable = true;
@@ -44,7 +44,7 @@
         syu = "systemctl --user";
         make = "make -j8";
       };
-      shellAliases = {
+      shellAliases = lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
         lgs = "${pkgs.systemd}/bin/journalctl --user -o json -f -u git-pull-home-manager.service | ${pkgs.lnav}/bin/lnav";
       };
       functions = {

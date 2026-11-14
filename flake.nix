@@ -22,59 +22,62 @@
 
   outputs = { self, nixpkgs, nixpkgs-proton, home-manager, nixvim, ... }:
     let
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
-    in {
-      homeConfigurations."nicu" = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs; 
+      personalGit = {
+        name = "Nicu Reut";
+        email = "contact@nicu.dev";
+      };
 
-        # Specify your home configuration modules here, for example,
-        # the path to your home.nix.
-        modules = [ 
-            ./home.nix 
-            ./hosts/xps/home.nix
+      # One Home Manager configuration. `modules` are host-specific on top of the
+      # shared ./home.nix; `args` are passed through extraSpecialArgs.
+      mkHome = { system, modules, args }:
+        home-manager.lib.homeManagerConfiguration {
+          pkgs = nixpkgs.legacyPackages.${system};
+          modules = [
+            ./home.nix
             nixvim.homeModules.nixvim
-       ];
+          ] ++ modules;
+          extraSpecialArgs = {
+            # Flake source store path; recorded on activation so the repo .envrc can
+            # tell whether the checked-out tree still needs `home-manager switch`.
+            flakeSelf = self;
+            protonPkgs = nixpkgs-proton.legacyPackages.${system};
+          } // args;
+        };
+    in {
+      # Personal laptop (XPS): claude-code, mistral-vibe, and AI neovim integrations
+      homeConfigurations."nicu" = mkHome {
+        system = "x86_64-linux";
+        modules = [ ./linux.nix ./hosts/xps/home.nix ];
+        args = {
+          git = personalGit;
+          personalLaptop = true;
+          antigravity = true;
+        };
+      };
 
-        # Optionally use extraSpecialArgs
-        # to pass through arguments to home.nix
-        extraSpecialArgs = {
-          # Flake source store path; recorded on activation so the repo .envrc can
-          # tell whether the checked-out tree still needs `home-manager switch`.
-          flakeSelf = self;
+      homeConfigurations."nicu@nicu-da-dell-pro-max" = mkHome {
+        system = "x86_64-linux";
+        modules = [ ./linux.nix ./hosts/work/home.nix ];
+        args = {
           git = {
             name = "Nicu Reut";
-            email = "contact@nicu.dev";
+            email = "nicu.reut@digitalasset.com";
           };
-          # Personal laptop (XPS): claude-code, mistral-vibe, and AI neovim integrations
+          personalLaptop = false;
+          antigravity = false;
+        };
+      };
+
+      # Personal MacBook (Apple Silicon): same personal setup as the XPS minus
+      # Antigravity and the Linux desktop/system modules.
+      homeConfigurations."nicu@Simonas-MacBook-Pro" = mkHome {
+        system = "aarch64-darwin";
+        modules = [ ./hosts/mac/home.nix ];
+        args = {
+          git = personalGit;
           personalLaptop = true;
-          protonPkgs = nixpkgs-proton.legacyPackages.${system};
+          antigravity = false;
         };
-    };
-    homeConfigurations."nicu@nicu-da-dell-pro-max" = home-manager.lib.homeManagerConfiguration {
-      inherit pkgs; 
-
-      # Specify your home configuration modules here, for example,
-      # the path to your home.nix.
-      modules = [ 
-          ./home.nix 
-          ./hosts/work/home.nix
-
-          nixvim.homeModules.nixvim
-     ];
-
-      # Optionally use extraSpecialArgs
-      # to pass through arguments to home.nix
-      extraSpecialArgs = {
-        # Flake source store path; recorded on activation so the repo .envrc can
-        # tell whether the checked-out tree still needs `home-manager switch`.
-        flakeSelf = self;
-        git = {
-          name = "Nicu Reut";
-          email = "nicu.reut@digitalasset.com";
-        };
-        personalLaptop = false;
       };
     };
-  };
 }
