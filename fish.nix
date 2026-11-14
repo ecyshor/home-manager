@@ -19,6 +19,8 @@
           source ~/.nix-profile/etc/profile.d/nix.fish
         end
         if test -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish
+          # The exported \"already sourced\" flag can be inherited without Nix's PATH
+          not command -q nix; and set -e __ETC_PROFILE_NIX_SOURCED
           source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish
           source /nix/var/nix/profiles/default/etc/profile.d/nix.fish
         end

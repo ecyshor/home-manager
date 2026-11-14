@@ -10,8 +10,11 @@
     dotDir = "${config.xdg.configHome}/zsh";
     # The Nix installer only hooks /etc/zshrc (interactive shells); load Nix's PATH
     # for every zsh, as fish.nix does, so scripts and tool shells find nix-profile/bin.
+    # Nix's "already sourced" flag is exported, so a child can inherit it from a
+    # parent whose PATH it doesn't share; decide by whether `nix` is on PATH instead.
     envExtra = ''
-      if [[ -z "''${__ETC_PROFILE_NIX_SOURCED:-}" && -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+      if ! command -v nix >/dev/null 2>&1 && [[ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+        unset __ETC_PROFILE_NIX_SOURCED
         . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
       fi
     '';

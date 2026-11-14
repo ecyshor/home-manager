@@ -70,7 +70,9 @@
 
       # Personal MacBook (Apple Silicon): same personal setup as the XPS minus
       # Antigravity and the Linux desktop/system modules.
-      homeConfigurations."nicu@Simonas-MacBook-Pro" = mkHome {
+      # Lowercase on purpose: home-manager looks hosts up with nixpkgs' `hostname`,
+      # which reports this Mac as "simonas-macbook-pro".
+      homeConfigurations."nicu@simonas-macbook-pro" = mkHome {
         system = "aarch64-darwin";
         modules = [ ./hosts/mac/home.nix ];
         args = {
