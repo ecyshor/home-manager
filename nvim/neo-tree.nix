@@ -76,6 +76,22 @@
           desc = "Switch to the right buffer.";
         };
       }
+      {
+        action = "<C-w><Down>";
+        key = "<C-j>";
+        mode = "n";
+        options = {
+          desc = "Switch to the buffer below.";
+        };
+      }
+      {
+        action = "<C-w><Up>";
+        key = "<C-k>";
+        mode = "n";
+        options = {
+          desc = "Switch to the buffer above.";
+        };
+      }
     ];
   };
 }

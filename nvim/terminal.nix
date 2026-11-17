@@ -74,5 +74,6 @@
     vim.keymap.set("n", "<leader>tt", toggle_split_term, { desc = "Toggle bottom split terminal" })
     vim.keymap.set({ "n", "t" }, "<C-/>", toggle_split_term, { desc = "Toggle bottom split terminal" })
     vim.keymap.set({ "n", "t" }, "<C-_>", toggle_split_term, { desc = "Toggle bottom split terminal" })
+    vim.keymap.set("t", "<Esc><Esc>", [[<C-\><C-n>]], { desc = "Exit terminal mode" })
   '';
 }

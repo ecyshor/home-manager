@@ -145,6 +145,30 @@
             action = "diagnostics";
             options.desc = "View diagnostics";
           };
+          "<leader>fh" = {
+            action = "help_tags";
+            options.desc = "Help tags";
+          };
+          "<leader>fo" = {
+            action = "oldfiles";
+            options.desc = "Recent files";
+          };
+          "<leader>fk" = {
+            action = "keymaps";
+            options.desc = "Keymaps";
+          };
+          "<leader>fw" = {
+            action = "grep_string";
+            options.desc = "Grep word under cursor";
+          };
+          "<leader>fs" = {
+            action = "lsp_document_symbols";
+            options.desc = "Document symbols";
+          };
+          "<leader>fS" = {
+            action = "lsp_dynamic_workspace_symbols";
+            options.desc = "Workspace symbols";
+          };
 
         };
         extensions = {
@@ -155,6 +179,24 @@
       # Dev
       lsp = {
         enable = true;
+        # Neovim 0.12 already maps grr/gra/grn/gri/K/[d/]d; only add what it lacks
+        keymaps = {
+          lspBuf = {
+            gd = { action = "definition"; desc = "Go to definition"; };
+            gD = { action = "declaration"; desc = "Go to declaration"; };
+          };
+          diagnostic = {
+            "<leader>e" = { action = "open_float"; desc = "Line diagnostics"; };
+          };
+          extra = [
+            {
+              mode = "n";
+              key = "<leader>lf";
+              action.__raw = "function() vim.lsp.buf.format({ async = true }) end";
+              options.desc = "Format buffer";
+            }
+          ];
+        };
         servers = {
           hls = {
             enable = true;
